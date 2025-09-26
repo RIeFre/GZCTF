@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using GZCTF.Models.Data;
 using GZCTF.Models.Request.Game;
 using GZCTF.Repositories.Interface;
 using GZCTF.Services.Cache;
@@ -16,6 +17,21 @@ public class GameRepository(
     AppDbContext context) : RepositoryBase(context), IGameRepository
 {
     readonly byte[] _xorKey = configService.GetXorKey();
+
+    private sealed class ChallengeScoreState
+    {
+        public ChallengeInfo Info { get; init; } = null!;
+        public int OriginalScore { get; init; }
+        public double MinScoreRate { get; init; }
+        public double Difficulty { get; init; }
+        public int AwardedSolves { get; set; }
+
+        public int AwardScore()
+        {
+            AwardedSolves++;
+            return GameChallenge.CalculateScore(OriginalScore, MinScoreRate, Difficulty, AwardedSolves);
+        }
+    }
 
     public override Task<int> CountAsync(CancellationToken token = default) => Context.Games.CountAsync(token);
 
@@ -253,7 +269,7 @@ public class GameRepository(
     public async Task<ScoreboardModel> GenScoreboard(Game game, CancellationToken token = default)
     {
         Dictionary<int, ScoreboardItem> items; // participant id -> scoreboard item
-        Dictionary<int, ChallengeInfo> challenges;
+        Dictionary<int, ChallengeScoreState> challenges;
         List<ChallengeItem> submissions;
 
         // 0. Begin transaction
@@ -287,16 +303,22 @@ public class GameRepository(
                 .Where(c => c.GameId == game.Id && c.IsEnabled)
                 .OrderBy(c => c.Category)
                 .ThenBy(c => c.Title)
-                .Select(c => new ChallengeInfo
+                .Select(c => new ChallengeScoreState
                 {
-                    Id = c.Id,
-                    Title = c.Title,
-                    Category = c.Category,
-                    Score = c.CurrentScore,
-                    SolvedCount = c.AcceptedCount,
-                    DisableBloodBonus = c.DisableBloodBonus
-                    // pending fields: Bloods
-                }).ToDictionaryAsync(c => c.Id, token);
+                    Info = new ChallengeInfo
+                    {
+                        Id = c.Id,
+                        Title = c.Title,
+                        Category = c.Category,
+                        Score = c.CurrentScore,
+                        SolvedCount = c.AcceptedCount,
+                        DisableBloodBonus = c.DisableBloodBonus
+                    },
+                    OriginalScore = c.OriginalScore,
+                    MinScoreRate = c.MinScoreRate,
+                    Difficulty = c.Difficulty,
+                    AwardedSolves = 0
+                }).ToDictionaryAsync(c => c.Info.Id, token);
 
             // 3. fetch all needed submissions into a list of ChallengeItem
             //    **take only the first accepted submission for each challenge & team**
@@ -351,18 +373,19 @@ public class GameRepository(
                 continue;
 
             var challenge = challenges[item.Id];
+            var challengeInfo = challenge.Info;
 
             // 4.1. generate bloods
-            if (challenge is { DisableBloodBonus: false, Bloods.Count: < 3 })
+            if (challengeInfo is { DisableBloodBonus: false, Bloods.Count: < 3 })
             {
-                item.Type = challenge.Bloods.Count switch
+                item.Type = challengeInfo.Bloods.Count switch
                 {
                     0 => SubmissionType.FirstBlood,
                     1 => SubmissionType.SecondBlood,
                     2 => SubmissionType.ThirdBlood,
                     _ => throw new UnreachableException()
                 };
-                challenge.Bloods.Add(new Blood
+                challengeInfo.Bloods.Add(new Blood
                 {
                     Id = scoreboardItem.Id,
                     Avatar = scoreboardItem.Avatar,
@@ -372,19 +395,21 @@ public class GameRepository(
             }
 
             // 4.2. update score
+            var baseScore = challenge.AwardScore();
+
             item.Score = noBonus
                 ? item.Type switch
                 {
                     SubmissionType.Unaccepted => throw new UnreachableException(),
-                    _ => challenge.Score
+                    _ => baseScore
                 }
                 : item.Type switch
                 {
                     SubmissionType.Unaccepted => throw new UnreachableException(),
-                    SubmissionType.FirstBlood => Convert.ToInt32(challenge.Score * bloodFactors[0]),
-                    SubmissionType.SecondBlood => Convert.ToInt32(challenge.Score * bloodFactors[1]),
-                    SubmissionType.ThirdBlood => Convert.ToInt32(challenge.Score * bloodFactors[2]),
-                    SubmissionType.Normal => challenge.Score,
+                    SubmissionType.FirstBlood => Convert.ToInt32(baseScore * bloodFactors[0]),
+                    SubmissionType.SecondBlood => Convert.ToInt32(baseScore * bloodFactors[1]),
+                    SubmissionType.ThirdBlood => Convert.ToInt32(baseScore * bloodFactors[2]),
+                    SubmissionType.Normal => baseScore,
                     _ => throw new ArgumentException(nameof(item.Type))
                 };
 
@@ -455,6 +480,7 @@ public class GameRepository(
         // 8. construct the final scoreboard model
         var challengesDict = challenges
             .Values
+            .Select(c => c.Info)
             .GroupBy(c => c.Category)
             .ToDictionary(c => c.Key, c => c.AsEnumerable());
 

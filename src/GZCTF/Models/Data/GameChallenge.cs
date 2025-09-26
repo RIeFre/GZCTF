@@ -39,14 +39,25 @@ public class GameChallenge : Challenge
     /// Current score of the challenge
     /// </summary>
     [NotMapped]
-    public int CurrentScore
+    public int CurrentScore => CalculateScore(OriginalScore, MinScoreRate, Difficulty, AcceptedCount + 1);
+
+    internal static int CalculateScore(int originalScore, double minScoreRate, double difficulty, int solveNumber)
     {
-        get => AcceptedCount <= 1
-            ? OriginalScore
-            : (int)Math.Floor(
-                OriginalScore * (MinScoreRate +
-                                 (1.0 - MinScoreRate) * Math.Exp((1 - AcceptedCount) / Difficulty)
-                ));
+        if (solveNumber <= 1)
+            return originalScore;
+
+        var minScore = (int)Math.Floor(originalScore * minScoreRate);
+
+        if (difficulty <= 0)
+            return Math.Clamp(minScore, 0, originalScore);
+
+        var rate = minScoreRate + (1.0 - minScoreRate) * Math.Exp((1 - solveNumber) / difficulty);
+        var score = (int)Math.Floor(originalScore * rate);
+
+        if (score < minScore)
+            return minScore;
+
+        return Math.Clamp(score, 0, originalScore);
     }
 
     internal void Update(ChallengeUpdateModel model)
