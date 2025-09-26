@@ -43,6 +43,7 @@
       },
       "copy_public_key": "复制公钥",
       "delete": "删除比赛",
+      "export_scoreboard": "导出榜单",
       "new": "新建比赛"
     },
     "notices": {

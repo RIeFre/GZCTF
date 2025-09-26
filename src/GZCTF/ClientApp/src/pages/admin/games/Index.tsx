@@ -1,5 +1,5 @@
 import { ActionIcon, Avatar, Badge, Button, Code, Group, Paper, ScrollArea, Switch, Table, Text } from '@mantine/core'
-import { mdiArrowLeftBold, mdiArrowRightBold, mdiChevronTripleRight, mdiPencilOutline, mdiPlus } from '@mdi/js'
+import { mdiArrowLeftBold, mdiArrowRightBold, mdiChevronTripleRight, mdiFileExcel, mdiPencilOutline, mdiPlus } from '@mdi/js'
 import { Icon } from '@mdi/react'
 import dayjs from 'dayjs'
 import { FC, useEffect, useState } from 'react'
@@ -23,9 +23,70 @@ const Games: FC = () => {
   const [disabled, setDisabled] = useState(false)
   const { data: games, total, setData: setGames, updateData: updateGames } = useArrayResponse<GameInfoModel>()
   const [current, setCurrent] = useState(0)
+  const [exportingId, setExportingId] = useState<number | null>(null)
 
   const navigate = useNavigate()
   const { t } = useTranslation()
+
+  const downloadBlob = (blob: Blob, filename: string) => {
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    link.click()
+    window.URL.revokeObjectURL(url)
+  }
+
+  const resolveFileName = (disposition: string | null, fallback: string) => {
+    if (!disposition) return fallback
+
+    const utf8Match = disposition.match(/filename\*=(?:UTF-8'')?([^;]+)/i)
+    if (utf8Match && utf8Match[1]) {
+      try {
+        return decodeURIComponent(utf8Match[1].replace(/"/g, '').trim())
+      } catch (err) {
+        console.warn('Failed to decode filename from Content-Disposition', err)
+        return utf8Match[1].replace(/"/g, '').trim()
+      }
+    }
+
+    const asciiMatch = disposition.match(/filename="?([^";]+)"?/i)
+    if (asciiMatch && asciiMatch[1]) {
+      return asciiMatch[1]
+    }
+
+    return fallback
+  }
+
+  const onExportScoreboard = async (game: GameInfoModel) => {
+    if (!game.id) return
+    setExportingId(game.id)
+
+    try {
+      const res = await fetch(`/api/Edit/Games/${game.id}/ScoreboardSheet`, {
+        credentials: 'include',
+      })
+
+      if (!res.ok) {
+        try {
+          const data = res.headers.get('content-type')?.includes('application/json') ? await res.json() : null
+          showErrorMsg({ response: { status: res.status, data } }, t)
+        } catch (err) {
+          showErrorMsg(err, t)
+        }
+        return
+      }
+
+      const blob = await res.blob()
+      const fallback = `${game.title ?? 'Scoreboard'}-Scoreboard.xlsx`
+      const filename = resolveFileName(res.headers.get('content-disposition'), fallback)
+      downloadBlob(blob, filename)
+    } catch (err) {
+      showErrorMsg(err, t)
+    } finally {
+      setExportingId(null)
+    }
+  }
 
   const onToggleHidden = async (game: GameInfoModel) => {
     if (!game.id) return
@@ -163,6 +224,16 @@ const Games: FC = () => {
                       </Table.Td>
                       <Table.Td>
                         <Group justify="right">
+                          <Button
+                            size="compact-sm"
+                            variant="light"
+                            color="green"
+                            leftSection={<Icon path={mdiFileExcel} size={0.8} />}
+                            loading={exportingId === game.id}
+                            onClick={() => onExportScoreboard(game)}
+                          >
+                            {t('admin.button.games.export_scoreboard')}
+                          </Button>
                           <ActionIcon component={Link} to={`/admin/games/${game.id}/info`}>
                             <Icon path={mdiPencilOutline} size={1} />
                           </ActionIcon>

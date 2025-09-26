@@ -43,6 +43,7 @@
       },
       "copy_public_key": "Copy Public Key",
       "delete": "Delete",
+      "export_scoreboard": "Export Scoreboard",
       "new": "New Game"
     },
     "notices": {

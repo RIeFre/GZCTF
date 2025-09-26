@@ -9,6 +9,7 @@ using GZCTF.Models.Request.Info;
 using GZCTF.Repositories.Interface;
 using GZCTF.Services.Cache;
 using GZCTF.Services.Container.Manager;
+using GZCTF.Utils;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
@@ -98,6 +99,7 @@ public class EditController(
     /// <response code="404">Post not found</response>
     [HttpDelete("Posts/{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(RequestResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(RequestResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeletePost(string id, CancellationToken token)
     {
@@ -199,6 +201,50 @@ public class EditController(
                 StatusCodes.Status404NotFound));
 
         return Ok(game.TeamHashSalt);
+    }
+
+    /// <summary>
+    /// Download scoreboard as Excel
+    /// </summary>
+    /// <remarks>
+    /// Downloads the game scoreboard in Excel format; requires administrator privileges
+    /// </remarks>
+    /// <param name="id">Game ID</param>
+    /// <param name="excelHelper"></param>
+    /// <param name="token"></param>
+    /// <response code="200">Successfully downloaded game scoreboard</response>
+    /// <response code="404">Game not found</response>
+    [HttpGet("Games/{id:int}/ScoreboardSheet")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(RequestResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(RequestResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DownloadScoreboardSheet([FromRoute] int id,
+        [FromServices] ExcelHelper excelHelper,
+        CancellationToken token)
+    {
+        var game = await gameRepository.GetGameById(id, token);
+
+        if (game is null)
+            return NotFound(new RequestResponse(localizer[nameof(Resources.Program.Game_NotFound)],
+                StatusCodes.Status404NotFound));
+
+        try
+        {
+            var scoreboard = await gameRepository.GetScoreboardWithMembers(game, token);
+            var stream = excelHelper.GetScoreboardExcel(scoreboard, game);
+            stream.Seek(0, SeekOrigin.Begin);
+
+            return File(stream,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                $"{game.Title}-Scoreboard-{DateTimeOffset.Now:yyyyMMdd-HH.mm.ssZ}.xlsx");
+        }
+        catch (Exception ex)
+        {
+            logger.SystemLog(StaticLocalizer[nameof(Resources.Program.Game_ScoreboardDownloadFailed)], TaskStatus.Failed,
+                LogLevel.Error);
+            logger.LogErrorMessage(ex, ex.Message);
+            return BadRequest(new RequestResponse(localizer[nameof(Resources.Program.Game_ScoreboardDownloadFailed)]));
+        }
     }
 
     /// <summary>
