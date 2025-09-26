@@ -502,6 +502,9 @@ namespace GZCTF.Migrations
                     b.Property<bool>("DisableBloodBonus")
                         .HasColumnType("boolean");
 
+                    b.Property<DateTimeOffset>("ExpectedSolveTimeUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<bool>("EnableTrafficCapture")
                         .HasColumnType("boolean");
 

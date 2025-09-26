@@ -65,6 +65,7 @@
       "The flag is still shining in an unknown area.",
       "May I ask where the flag is?"
     ],
+    "expected_time": "Solve before {{time}} ({{timezone}}) to receive the full dynamic score. After the deadline, each solve awards {{score}} pts.",
     "instance": {
       "actions": {
         "count_down": "Remaining: ",

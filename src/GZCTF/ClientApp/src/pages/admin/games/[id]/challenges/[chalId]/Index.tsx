@@ -14,11 +14,13 @@ import {
   TextInput,
   Title,
 } from '@mantine/core'
+import { DatePickerInput, TimeInput } from '@mantine/dates'
 import { useModals } from '@mantine/modals'
 import { showNotification } from '@mantine/notifications'
 import { mdiCheck, mdiContentSaveOutline, mdiDatabaseEditOutline, mdiDeleteOutline, mdiEyeOutline } from '@mdi/js'
 import { Icon } from '@mdi/react'
-import { FC, useEffect, useState } from 'react'
+import dayjs, { Dayjs } from 'dayjs'
+import { FC, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router'
 import { HintList } from '@Components/HintList'
@@ -53,10 +55,22 @@ const GameChallengeEdit: FC = () => {
   const [disabled, setDisabled] = useState(false)
 
   const [minRate, setMinRate] = useState((challenge?.minScoreRate ?? 0.25) * 100)
+  const [expectedSolveTime, setExpectedSolveTime] = useState<Dayjs>(
+    dayjs(challenge?.expectedSolveTimeUtc ?? dayjs().valueOf())
+  )
   const [category, setCategory] = useState<string | null>(challenge?.category ?? ChallengeCategory.Misc)
   const [type, setType] = useState<string | null>(challenge?.type ?? ChallengeType.StaticAttachment)
   const [currentAcceptCount, setCurrentAcceptCount] = useState(0)
   const [previewOpened, setPreviewOpened] = useState(false)
+
+  const lateScorePreview = useMemo(() => {
+    if (challenge?.lateSolveScore) return challenge.lateSolveScore
+
+    const original = challengeInfo?.originalScore ?? 0
+    const minScore = Math.floor(original * (minRate / 100))
+    const sixtyPercent = Math.floor(original * 0.6)
+    return Math.min(sixtyPercent, minScore)
+  }, [challenge?.lateSolveScore, challengeInfo?.originalScore, minRate])
 
   const modals = useModals()
   const challengeTypeLabelMap = useChallengeTypeLabelMap()
@@ -70,6 +84,7 @@ const GameChallengeEdit: FC = () => {
       setCategory(challenge.category)
       setType(challenge.type)
       setMinRate((challenge?.minScoreRate ?? 0.25) * 100)
+      setExpectedSolveTime(dayjs(challenge.expectedSolveTimeUtc ?? dayjs().valueOf()))
       setCurrentAcceptCount(challenge.acceptedCount)
     }
   }, [challenge])
@@ -91,6 +106,7 @@ const GameChallengeEdit: FC = () => {
         })
       }
       mutate(res.data)
+      setExpectedSolveTime(dayjs(res.data.expectedSolveTimeUtc))
       mutateChals()
     } catch (e) {
       showErrorMsg(e, t)
@@ -243,6 +259,7 @@ const GameChallengeEdit: FC = () => {
                   ...challengeInfo,
                   category: category as ChallengeCategory,
                   minScoreRate: minRate / 100,
+                  expectedSolveTimeUtc: expectedSolveTime.valueOf(),
                 })
               }
             >
@@ -411,6 +428,53 @@ const GameChallengeEdit: FC = () => {
                   onChange={setMinRate}
                   classNames={{ label: misc.challEditLabel }}
                 />
+              </Input.Wrapper>
+              <Input.Wrapper
+                label={t('admin.content.games.challenges.expected_time.label')}
+                description={t('admin.content.games.challenges.expected_time.description')}
+              >
+                <Stack gap="xs">
+                  <Group wrap="nowrap" align="flex-end" gap="sm">
+                    <DatePickerInput
+                      value={expectedSolveTime.toDate()}
+                      label={t('admin.content.games.challenges.expected_time.date')}
+                      clearable={false}
+                      disabled={disabled}
+                      onChange={(value) => {
+                        const next = dayjs(value ?? expectedSolveTime.toDate())
+                          .hour(expectedSolveTime.hour())
+                          .minute(expectedSolveTime.minute())
+                          .second(0)
+                          .millisecond(0)
+                        setExpectedSolveTime(next)
+                        setChallengeInfo((prev) => ({ ...prev, expectedSolveTimeUtc: next.valueOf() }))
+                      }}
+                    />
+                    <TimeInput
+                      value={expectedSolveTime.format('HH:mm')}
+                      label={t('admin.content.games.challenges.expected_time.time')}
+                      disabled={disabled}
+                      onChange={(event) => {
+                        const [hour = '0', minute = '0'] = event.currentTarget.value.split(':')
+                        const next = dayjs(expectedSolveTime)
+                          .hour(Number(hour))
+                          .minute(Number(minute))
+                          .second(0)
+                          .millisecond(0)
+                        setExpectedSolveTime(next)
+                        setChallengeInfo((prev) => ({ ...prev, expectedSolveTimeUtc: next.valueOf() }))
+                      }}
+                    />
+                  </Group>
+                  <Text size="xs" c="dimmed">
+                    {t('admin.content.games.challenges.expected_time.timezone_hint')}
+                  </Text>
+                  <Text size="xs" c="dimmed">
+                    {t('admin.content.games.challenges.expected_time.score_hint', {
+                      score: lateScorePreview,
+                    })}
+                  </Text>
+                </Stack>
               </Input.Wrapper>
               <Switch
                 disabled={disabled}

@@ -65,6 +65,7 @@
       "人生自古谁无死？留取 flag 照汗青",
       "借问 flag 何处有？牧童遥指杏花村"
     ],
+    "expected_time": "请在 {{time}}（{{timezone}}）前解出以获得完整动态分，超过后每次解题固定获得 {{score}} 分。",
     "instance": {
       "actions": {
         "count_down": "剩余时间：",

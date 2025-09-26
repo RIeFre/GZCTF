@@ -25,11 +25,17 @@ public class GameRepository(
         public double MinScoreRate { get; init; }
         public double Difficulty { get; init; }
         public int AwardedSolves { get; set; }
+        public DateTimeOffset ExpectedSolveTimeUtc { get; init; }
+        public int LateSolveScore { get; init; }
 
-        public int AwardScore()
+        public (int score, bool isLate) AwardScore(DateTimeOffset submitTimeUtc)
         {
+            var solveNumber = AwardedSolves + 1;
+            var score = GameChallenge.CalculateScore(OriginalScore, MinScoreRate, Difficulty, solveNumber,
+                submitTimeUtc, ExpectedSolveTimeUtc);
+            var isLate = submitTimeUtc > ExpectedSolveTimeUtc;
             AwardedSolves++;
-            return GameChallenge.CalculateScore(OriginalScore, MinScoreRate, Difficulty, AwardedSolves);
+            return (score, isLate);
         }
     }
 
@@ -312,11 +318,15 @@ public class GameRepository(
                         Category = c.Category,
                         Score = c.CurrentScore,
                         SolvedCount = c.AcceptedCount,
-                        DisableBloodBonus = c.DisableBloodBonus
+                        DisableBloodBonus = c.DisableBloodBonus,
+                        ExpectedSolveTimeUtc = c.ExpectedSolveTimeUtc,
+                        LateSolveScore = GameChallenge.CalculateLateSolveScore(c.OriginalScore, c.MinScoreRate)
                     },
                     OriginalScore = c.OriginalScore,
                     MinScoreRate = c.MinScoreRate,
                     Difficulty = c.Difficulty,
+                    ExpectedSolveTimeUtc = c.ExpectedSolveTimeUtc,
+                    LateSolveScore = GameChallenge.CalculateLateSolveScore(c.OriginalScore, c.MinScoreRate),
                     AwardedSolves = 0
                 }).ToDictionaryAsync(c => c.Info.Id, token);
 
@@ -374,9 +384,10 @@ public class GameRepository(
 
             var challenge = challenges[item.Id];
             var challengeInfo = challenge.Info;
+            var (baseScore, isLateSolve) = challenge.AwardScore(item.SubmitTimeUtc);
 
-            // 4.1. generate bloods
-            if (challengeInfo is { DisableBloodBonus: false, Bloods.Count: < 3 })
+            // 4.1. generate bloods if eligible and before the expected completion time
+            if (!isLateSolve && challengeInfo is { DisableBloodBonus: false, Bloods.Count: < 3 })
             {
                 item.Type = challengeInfo.Bloods.Count switch
                 {
@@ -393,17 +404,23 @@ public class GameRepository(
                     SubmitTimeUtc = item.SubmitTimeUtc
                 });
             }
+            else
+            {
+                item.Type = SubmissionType.Normal;
+            }
 
             // 4.2. update score
-            var baseScore = challenge.AwardScore();
-
-            item.Score = noBonus
-                ? item.Type switch
-                {
-                    SubmissionType.Unaccepted => throw new UnreachableException(),
-                    _ => baseScore
-                }
-                : item.Type switch
+            if (isLateSolve)
+            {
+                item.Score = baseScore;
+            }
+            else if (noBonus)
+            {
+                item.Score = baseScore;
+            }
+            else
+            {
+                item.Score = item.Type switch
                 {
                     SubmissionType.Unaccepted => throw new UnreachableException(),
                     SubmissionType.FirstBlood => Convert.ToInt32(baseScore * bloodFactors[0]),
@@ -412,6 +429,7 @@ public class GameRepository(
                     SubmissionType.Normal => baseScore,
                     _ => throw new ArgumentException(nameof(item.Type))
                 };
+            }
 
             // 4.3. update scoreboard item
             scoreboardItem.SolvedChallenges.Add(item);

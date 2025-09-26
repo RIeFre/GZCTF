@@ -1092,6 +1092,16 @@ export interface ChallengeEditDetailModel {
    * @format double
    */
   difficulty: number;
+  /**
+   * Expected completion time (UTC)
+   * @format uint64
+   */
+  expectedSolveTimeUtc: number;
+  /**
+   * Fixed score after the expected completion time
+   * @format int32
+   */
+  lateSolveScore: number;
 }
 
 export interface Attachment {
@@ -1171,6 +1181,16 @@ export interface ChallengeInfoModel {
    * @format int32
    */
   originalScore?: number;
+  /**
+   * Expected completion time (UTC)
+   * @format uint64
+   */
+  expectedSolveTimeUtc?: number;
+  /**
+   * Fixed score after the expected completion time
+   * @format int32
+   */
+  lateSolveScore?: number;
 }
 
 /** Challenge update information (Edit) */
@@ -1251,6 +1271,11 @@ export interface ChallengeUpdateModel {
    * @format double
    */
   difficulty?: number | null;
+  /**
+   * Expected completion time (UTC)
+   * @format uint64
+   */
+  expectedSolveTimeUtc?: number | null;
 }
 
 /** New attachment information (Edit) */
@@ -1518,6 +1543,16 @@ export interface ChallengeInfo {
    */
   score?: number;
   /**
+   * Expected completion time (UTC)
+   * @format uint64
+   */
+  expectedSolveTimeUtc?: number;
+  /**
+   * Fixed score after the expected completion time
+   * @format int32
+   */
+  lateSolveScore?: number;
+  /**
    * Number of teams that solved the challenge
    * @format int32
    */
@@ -1767,6 +1802,16 @@ export interface ChallengeDetailModel {
    * @format int32
    */
   score?: number;
+  /**
+   * Expected completion time (UTC)
+   * @format uint64
+   */
+  expectedSolveTimeUtc?: number;
+  /**
+   * Fixed score after the expected completion time
+   * @format int32
+   */
+  lateSolveScore?: number;
   /** Challenge type */
   type?: ChallengeType;
   /** Flag context */

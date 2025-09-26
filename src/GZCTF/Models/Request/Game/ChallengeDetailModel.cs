@@ -1,4 +1,5 @@
-﻿using GZCTF.Models.Request.Shared;
+﻿using GZCTF.Models.Data;
+using GZCTF.Models.Request.Shared;
 
 namespace GZCTF.Models.Request.Game;
 
@@ -38,6 +39,16 @@ public class ChallengeDetailModel
     public int Score { get; set; }
 
     /// <summary>
+    /// Expected completion time (UTC)
+    /// </summary>
+    public DateTimeOffset ExpectedSolveTimeUtc { get; set; }
+
+    /// <summary>
+    /// Fixed score after the expected completion time
+    /// </summary>
+    public int LateSolveScore { get; set; }
+
+    /// <summary>
     /// Challenge type
     /// </summary>
     public ChallengeType Type { get; set; } = ChallengeType.StaticAttachment;
@@ -64,6 +75,9 @@ public class ChallengeDetailModel
             Content = gameInstance.Challenge.Content,
             Hints = gameInstance.Challenge.Hints,
             Score = gameInstance.Challenge.CurrentScore,
+            ExpectedSolveTimeUtc = gameInstance.Challenge.ExpectedSolveTimeUtc,
+            LateSolveScore = GameChallenge.CalculateLateSolveScore(gameInstance.Challenge.OriginalScore,
+                gameInstance.Challenge.MinScoreRate),
             Category = gameInstance.Challenge.Category,
             Title = gameInstance.Challenge.Title,
             Type = gameInstance.Challenge.Type,

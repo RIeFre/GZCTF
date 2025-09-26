@@ -145,6 +145,14 @@
           "description": "最低分值：{{min_score}}pts",
           "label": "最低分比例"
         },
+        "expected_time": {
+          "label": "应完成时间",
+          "description": "在此时间前解出可获得完整动态分。",
+          "date": "应完成日期",
+          "time": "应完成时间",
+          "timezone_hint": "时间均按北京时间 (UTC+8) 计算。",
+          "score_hint": "超过应完成时间后，解题固定获得 {{score}} 分（60% 分值与最低分值中的较小值）。"
+        },
         "score": "题目分值",
         "service_port": {
           "description": "容器内服务的端口号",

@@ -18,6 +18,7 @@ import { FC, useEffect, useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { InstanceEntry } from '@Components/InstanceEntry'
 import { ContentPlaceholder, InlineMarkdown, Markdown } from '@Components/MarkdownRenderer'
+import { useLanguage } from '@Utils/I18n'
 import { ChallengeCategoryItemProps } from '@Utils/Shared'
 import { ChallengeDetailModel, ChallengeType } from '@Api'
 import classes from '@Styles/ChallengeModal.module.css'
@@ -56,6 +57,7 @@ export const ChallengeModal: FC<ChallengeModalProps> = (props) => {
   } = props
   const { t } = useTranslation()
   const theme = useMantineTheme()
+  const { locale } = useLanguage()
 
   const placeholders = t('challenge.content.flag_placeholders', {
     returnObjects: true,
@@ -64,7 +66,31 @@ export const ChallengeModal: FC<ChallengeModalProps> = (props) => {
   const [placeholder, setPlaceholder] = useState('')
   useEffect(() => {
     setPlaceholder(placeholders[Math.floor(Math.random() * placeholders.length)])
-  }, [challenge])
+  }, [challenge, placeholders])
+
+  const expectedSolveTimeText = useMemo(() => {
+    if (!challenge?.expectedSolveTimeUtc) return null
+
+    const formatter = new Intl.DateTimeFormat(locale ?? 'zh-CN', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+      timeZone: 'Asia/Shanghai',
+    })
+
+    return formatter.format(new Date(challenge.expectedSolveTimeUtc))
+  }, [challenge?.expectedSolveTimeUtc, locale])
+
+  const lateSolveScore = useMemo(() => {
+    if (challenge?.lateSolveScore) return challenge.lateSolveScore
+
+    const original = challenge?.score ?? 0
+    return Math.min(Math.floor(original * 0.6), Math.floor(original * 0.25))
+  }, [challenge?.lateSolveScore, challenge?.score])
+
+  const isLateSolvePhase = useMemo(() => {
+    if (!challenge?.expectedSolveTimeUtc) return false
+    return Date.now() > challenge.expectedSolveTimeUtc
+  }, [challenge?.expectedSolveTimeUtc])
 
   const isLimitReached = (challenge?.limit && (challenge.attempts ?? 0) >= challenge.limit) || false
 
@@ -94,6 +120,15 @@ export const ChallengeModal: FC<ChallengeModalProps> = (props) => {
         <ContentPlaceholder />
       ) : (
         <>
+          {expectedSolveTimeText && (
+            <Text size="sm" c={isLateSolvePhase ? 'orange' : 'dimmed'} fw={isLateSolvePhase ? 600 : undefined}>
+              {t('challenge.content.expected_time', {
+                time: expectedSolveTimeText,
+                timezone: 'UTC+8',
+                score: lateSolveScore,
+              })}
+            </Text>
+          )}
           <Markdown source={challenge.content ?? ''} />
           {challenge.hints && challenge.hints.length > 0 && (
             <Stack gap={2} pt="sm">

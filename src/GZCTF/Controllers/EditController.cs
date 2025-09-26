@@ -2,6 +2,7 @@
 using System.Net.Mime;
 using GZCTF.Extensions;
 using GZCTF.Middlewares;
+using GZCTF.Models.Data;
 using GZCTF.Models.Request.Edit;
 using GZCTF.Models.Request.Game;
 using GZCTF.Models.Request.Info;
@@ -463,8 +464,16 @@ public class EditController(
             return NotFound(new RequestResponse(localizer[nameof(Resources.Program.Game_NotFound)],
                 StatusCodes.Status404NotFound));
 
+        var expectedSolveTimeUtc = model.ExpectedSolveTimeUtc ?? GameChallenge.GetDefaultExpectedSolveTime();
+
         var res = await challengeRepository.CreateChallenge(game,
-            new GameChallenge { Title = model.Title, Type = model.Type, Category = model.Category }, token);
+            new GameChallenge
+            {
+                Title = model.Title,
+                Type = model.Type,
+                Category = model.Category,
+                ExpectedSolveTimeUtc = expectedSolveTimeUtc
+            }, token);
 
         return Ok(ChallengeEditDetailModel.FromChallenge(res));
     }

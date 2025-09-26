@@ -112,6 +112,11 @@ public class ChallengeUpdateModel
     public double? Difficulty { get; set; }
 
     /// <summary>
+    /// Expected completion time (UTC)
+    /// </summary>
+    public DateTimeOffset? ExpectedSolveTimeUtc { get; set; }
+
+    /// <summary>
     /// Check if hints are updated
     /// </summary>
     /// <param name="originalHash">Original hash</param>

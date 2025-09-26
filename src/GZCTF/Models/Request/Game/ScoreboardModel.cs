@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
@@ -237,6 +238,16 @@ public partial class ChallengeInfo
     /// Challenge score
     /// </summary>
     public int Score { get; set; }
+
+    /// <summary>
+    /// Expected completion time (UTC)
+    /// </summary>
+    public DateTimeOffset ExpectedSolveTimeUtc { get; set; }
+
+    /// <summary>
+    /// Fixed score after the expected completion time
+    /// </summary>
+    public int LateSolveScore { get; set; }
 
     /// <summary>
     /// Number of teams that solved the challenge

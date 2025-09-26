@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using GZCTF.Models.Data;
 using GZCTF.Models.Request.Game;
 
 namespace GZCTF.Models.Request.Edit;
@@ -149,6 +150,16 @@ public class ChallengeEditDetailModel
     [Required]
     public double Difficulty { get; set; } = 3;
 
+    /// <summary>
+    /// Expected completion time (UTC)
+    /// </summary>
+    public DateTimeOffset ExpectedSolveTimeUtc { get; set; } = GameChallenge.GetDefaultExpectedSolveTime();
+
+    /// <summary>
+    /// Fixed score after the expected completion time
+    /// </summary>
+    public int LateSolveScore { get; set; }
+
     internal static ChallengeEditDetailModel FromChallenge(GameChallenge chal) =>
         new()
         {
@@ -170,6 +181,8 @@ public class ChallengeEditDetailModel
             OriginalScore = chal.OriginalScore,
             MinScoreRate = chal.MinScoreRate,
             Difficulty = chal.Difficulty,
+            ExpectedSolveTimeUtc = chal.ExpectedSolveTimeUtc,
+            LateSolveScore = GameChallenge.CalculateLateSolveScore(chal.OriginalScore, chal.MinScoreRate),
             FileName = chal.FileName,
             AcceptedCount = chal.AcceptedCount,
             Attachment = chal.Attachment,

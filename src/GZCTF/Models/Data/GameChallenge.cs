@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using GZCTF.Models.Request.Edit;
 
@@ -36,12 +37,37 @@ public class GameChallenge : Challenge
     public double Difficulty { get; set; } = 5;
 
     /// <summary>
+    /// Expected completion time (UTC)
+    /// </summary>
+    [Required]
+    public DateTimeOffset ExpectedSolveTimeUtc { get; set; } = GetDefaultExpectedSolveTime();
+
+    static readonly TimeZoneInfo ChinaStandardTime = GetChinaTimeZone();
+
+    /// <summary>
     /// Current score of the challenge
     /// </summary>
     [NotMapped]
-    public int CurrentScore => CalculateScore(OriginalScore, MinScoreRate, Difficulty, AcceptedCount + 1);
+    public int CurrentScore => CalculateScore(OriginalScore, MinScoreRate, Difficulty, AcceptedCount + 1,
+        DateTimeOffset.UtcNow, ExpectedSolveTimeUtc);
 
-    internal static int CalculateScore(int originalScore, double minScoreRate, double difficulty, int solveNumber)
+    internal static int CalculateScore(int originalScore, double minScoreRate, double difficulty, int solveNumber,
+        DateTimeOffset submissionTimeUtc, DateTimeOffset expectedSolveTimeUtc)
+    {
+        return submissionTimeUtc > expectedSolveTimeUtc
+            ? CalculateLateSolveScore(originalScore, minScoreRate)
+            : CalculateDynamicScore(originalScore, minScoreRate, difficulty, solveNumber);
+    }
+
+    internal static int CalculateLateSolveScore(int originalScore, double minScoreRate)
+    {
+        var sixtyPercent = (int)Math.Floor(originalScore * 0.6);
+        var minScore = (int)Math.Floor(originalScore * minScoreRate);
+
+        return Math.Clamp(Math.Min(sixtyPercent, minScore), 0, originalScore);
+    }
+
+    static int CalculateDynamicScore(int originalScore, double minScoreRate, double difficulty, int solveNumber)
     {
         if (solveNumber <= 1)
             return originalScore;
@@ -58,6 +84,48 @@ public class GameChallenge : Challenge
             return minScore;
 
         return Math.Clamp(score, 0, originalScore);
+    }
+
+    internal static DateTimeOffset GetDefaultExpectedSolveTime(DateTimeOffset? creationTimeUtc = null)
+    {
+        var baseTime = creationTimeUtc ?? DateTimeOffset.UtcNow;
+        if (ChinaStandardTime == TimeZoneInfo.Utc)
+        {
+            var utcTarget = baseTime.AddDays(7);
+            var utcMidnight = new DateTime(utcTarget.UtcDateTime.Year, utcTarget.UtcDateTime.Month,
+                utcTarget.UtcDateTime.Day, 23, 59, 0, DateTimeKind.Utc);
+            return new DateTimeOffset(utcMidnight);
+        }
+
+        var localTime = TimeZoneInfo.ConvertTime(baseTime, ChinaStandardTime);
+        var dueLocalDate = localTime.Date.AddDays(7);
+        var dueLocalDateTime = dueLocalDate.AddHours(23).AddMinutes(59);
+        var offset = ChinaStandardTime.GetUtcOffset(dueLocalDateTime);
+        var localDue = new DateTimeOffset(dueLocalDateTime, offset);
+        return localDue.ToUniversalTime();
+    }
+
+    static TimeZoneInfo GetChinaTimeZone()
+    {
+        try
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById("Asia/Shanghai");
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            try
+            {
+                return TimeZoneInfo.FindSystemTimeZoneById("China Standard Time");
+            }
+            catch
+            {
+                return TimeZoneInfo.Utc;
+            }
+        }
+        catch (InvalidTimeZoneException)
+        {
+            return TimeZoneInfo.Utc;
+        }
     }
 
     internal void Update(ChallengeUpdateModel model)
@@ -78,6 +146,7 @@ public class GameChallenge : Challenge
         FileName = model.FileName ?? FileName;
         DisableBloodBonus = model.DisableBloodBonus ?? DisableBloodBonus;
         SubmissionLimit = model.SubmissionLimit ?? SubmissionLimit;
+        ExpectedSolveTimeUtc = model.ExpectedSolveTimeUtc ?? ExpectedSolveTimeUtc;
 
         // only set FlagTemplate to null when pass an empty string (but not null)
         FlagTemplate = model.FlagTemplate is null ? FlagTemplate :

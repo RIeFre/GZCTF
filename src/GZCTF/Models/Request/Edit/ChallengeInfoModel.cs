@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace GZCTF.Models.Request.Edit;
 
@@ -51,6 +52,17 @@ public class ChallengeInfoModel
     /// </summary>
     public int OriginalScore { get; set; } = 500;
 
+    /// <summary>
+    /// Expected completion time (UTC)
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public DateTimeOffset? ExpectedSolveTimeUtc { get; set; }
+
+    /// <summary>
+    /// Fixed score after the expected completion time
+    /// </summary>
+    public int LateSolveScore { get; set; }
+
     internal static ChallengeInfoModel FromChallenge(GameChallenge challenge) =>
         new()
         {
@@ -61,6 +73,8 @@ public class ChallengeInfoModel
             Score = challenge.CurrentScore,
             MinScore = (int)Math.Floor(challenge.MinScoreRate * challenge.OriginalScore),
             OriginalScore = challenge.OriginalScore,
+            ExpectedSolveTimeUtc = challenge.ExpectedSolveTimeUtc,
+            LateSolveScore = GameChallenge.CalculateLateSolveScore(challenge.OriginalScore, challenge.MinScoreRate),
             IsEnabled = challenge.IsEnabled
         };
 }
