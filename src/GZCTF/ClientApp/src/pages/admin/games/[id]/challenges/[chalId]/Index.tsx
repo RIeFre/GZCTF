@@ -44,6 +44,12 @@ import { useGame } from '@Hooks/useGame'
 import api, { ChallengeCategory, ChallengeType, ChallengeUpdateModel } from '@Api'
 import misc from '@Styles/Misc.module.css'
 
+const DEFAULT_MIN_SCORE_RATE = 0.7
+const DEFAULT_DYNAMIC_PORT = 22
+const DEFAULT_DYNAMIC_CPU = 5
+const DEFAULT_DYNAMIC_MEMORY = 384
+const DEFAULT_DYNAMIC_STORAGE = 512
+
 const GameChallengeEdit: FC = () => {
   const navigate = useNavigate()
   const { id, chalId } = useParams()
@@ -53,10 +59,25 @@ const GameChallengeEdit: FC = () => {
   const { challenge, mutate } = useEditChallenge(numId, numCId)
   const { challenges, mutate: mutateChals } = useEditChallenges(numId)
 
-  const [challengeInfo, setChallengeInfo] = useState<ChallengeUpdateModel>({ ...challenge })
+  const [challengeInfo, setChallengeInfo] = useState<ChallengeUpdateModel>(() => {
+    const base: ChallengeUpdateModel = {
+      ...challenge,
+      minScoreRate: challenge?.minScoreRate ?? DEFAULT_MIN_SCORE_RATE,
+      disableBloodBonus: challenge?.disableBloodBonus ?? true,
+    }
+
+    if (challenge?.type === ChallengeType.DynamicContainer) {
+      base.containerExposePort = challenge.containerExposePort ?? DEFAULT_DYNAMIC_PORT
+      base.cpuCount = challenge.cpuCount ?? DEFAULT_DYNAMIC_CPU
+      base.memoryLimit = challenge.memoryLimit ?? DEFAULT_DYNAMIC_MEMORY
+      base.storageLimit = challenge.storageLimit ?? DEFAULT_DYNAMIC_STORAGE
+    }
+
+    return base
+  })
   const [disabled, setDisabled] = useState(false)
 
-  const [minRate, setMinRate] = useState((challenge?.minScoreRate ?? 0.25) * 100)
+  const [minRate, setMinRate] = useState((challenge?.minScoreRate ?? DEFAULT_MIN_SCORE_RATE) * 100)
   const [expectedSolveTime, setExpectedSolveTime] = useState<Dayjs>(
     dayjs(challenge?.expectedSolveTimeUtc ?? dayjs().valueOf())
   )
@@ -82,10 +103,23 @@ const GameChallengeEdit: FC = () => {
 
   useEffect(() => {
     if (challenge) {
-      setChallengeInfo({ ...challenge })
-      setCategory(challenge.category)
-      setType(challenge.type)
-      setMinRate((challenge?.minScoreRate ?? 0.25) * 100)
+      const nextChallenge: ChallengeUpdateModel = {
+        ...challenge,
+        minScoreRate: challenge.minScoreRate ?? DEFAULT_MIN_SCORE_RATE,
+        disableBloodBonus: challenge.disableBloodBonus ?? true,
+      }
+
+      if (challenge.type === ChallengeType.DynamicContainer) {
+        nextChallenge.containerExposePort = challenge.containerExposePort ?? DEFAULT_DYNAMIC_PORT
+        nextChallenge.cpuCount = challenge.cpuCount ?? DEFAULT_DYNAMIC_CPU
+        nextChallenge.memoryLimit = challenge.memoryLimit ?? DEFAULT_DYNAMIC_MEMORY
+        nextChallenge.storageLimit = challenge.storageLimit ?? DEFAULT_DYNAMIC_STORAGE
+      }
+
+      setChallengeInfo(nextChallenge)
+      setCategory(nextChallenge.category)
+      setType(nextChallenge.type)
+      setMinRate((nextChallenge.minScoreRate ?? DEFAULT_MIN_SCORE_RATE) * 100)
       setExpectedSolveTime(dayjs(challenge.expectedSolveTimeUtc ?? dayjs().valueOf()))
       setCurrentAcceptCount(challenge.acceptedCount)
     }
@@ -565,7 +599,10 @@ const GameChallengeEdit: FC = () => {
                 disabled={disabled}
                 stepHoldDelay={500}
                 stepHoldInterval={(t) => Math.max(1000 / t ** 2, 25)}
-                value={challengeInfo.containerExposePort ?? 1}
+                value={
+                  challengeInfo.containerExposePort ??
+                  (type === ChallengeType.DynamicContainer ? DEFAULT_DYNAMIC_PORT : 1)
+                }
                 onChange={(e) =>
                   typeof e !== 'string' && setChallengeInfo({ ...challengeInfo, containerExposePort: e })
                 }
@@ -581,7 +618,10 @@ const GameChallengeEdit: FC = () => {
                 disabled={disabled}
                 stepHoldDelay={500}
                 stepHoldInterval={(t) => Math.max(1000 / t ** 2, 25)}
-                value={challengeInfo.cpuCount ?? 1}
+                value={
+                  challengeInfo.cpuCount ??
+                  (type === ChallengeType.DynamicContainer ? DEFAULT_DYNAMIC_CPU : 1)
+                }
                 onChange={(e) => typeof e !== 'string' && setChallengeInfo({ ...challengeInfo, cpuCount: e })}
               />
             </Grid.Col>
@@ -595,7 +635,10 @@ const GameChallengeEdit: FC = () => {
                 disabled={disabled}
                 stepHoldDelay={500}
                 stepHoldInterval={(t) => Math.max(1000 / t ** 2, 25)}
-                value={challengeInfo.memoryLimit ?? 32}
+                value={
+                  challengeInfo.memoryLimit ??
+                  (type === ChallengeType.DynamicContainer ? DEFAULT_DYNAMIC_MEMORY : 32)
+                }
                 onChange={(e) => typeof e !== 'string' && setChallengeInfo({ ...challengeInfo, memoryLimit: e })}
               />
             </Grid.Col>
@@ -609,7 +652,10 @@ const GameChallengeEdit: FC = () => {
                 disabled={disabled}
                 stepHoldDelay={500}
                 stepHoldInterval={(t) => Math.max(1000 / t ** 2, 25)}
-                value={challengeInfo.storageLimit ?? 128}
+                value={
+                  challengeInfo.storageLimit ??
+                  (type === ChallengeType.DynamicContainer ? DEFAULT_DYNAMIC_STORAGE : 128)
+                }
                 onChange={(e) => typeof e !== 'string' && setChallengeInfo({ ...challengeInfo, storageLimit: e })}
               />
             </Grid.Col>

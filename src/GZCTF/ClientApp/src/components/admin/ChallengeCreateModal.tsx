@@ -16,6 +16,12 @@ import {
 } from '@Utils/Shared'
 import api, { ChallengeInfoModel, ChallengeCategory, ChallengeType } from '@Api'
 
+const DEFAULT_MIN_SCORE_RATE = 0.7
+const DEFAULT_DYNAMIC_PORT = 22
+const DEFAULT_DYNAMIC_CPU = 5
+const DEFAULT_DYNAMIC_MEMORY = 384
+const DEFAULT_DYNAMIC_STORAGE = 512
+
 interface ChallengeCreateModalProps extends ModalProps {
   onAddChallenge: (game: ChallengeInfoModel) => void
 }
@@ -46,13 +52,34 @@ export const ChallengeCreateModal: FC<ChallengeCreateModalProps> = (props) => {
         category: category as ChallengeCategory,
         type: type as ChallengeType,
       })
+      let created = res.data
+
+      const defaults = {
+        minScoreRate: DEFAULT_MIN_SCORE_RATE,
+        disableBloodBonus: true,
+      }
+
+      if (type === ChallengeType.DynamicContainer) {
+        Object.assign(defaults, {
+          containerExposePort: DEFAULT_DYNAMIC_PORT,
+          cpuCount: DEFAULT_DYNAMIC_CPU,
+          memoryLimit: DEFAULT_DYNAMIC_MEMORY,
+          storageLimit: DEFAULT_DYNAMIC_STORAGE,
+        })
+      }
+
+      if (created.id != null) {
+        const updateRes = await api.edit.editUpdateGameChallenge(numId, created.id, defaults)
+        created = updateRes.data
+      }
+
       showNotification({
         color: 'teal',
         message: t('admin.notification.games.challenges.created'),
         icon: <Icon path={mdiCheck} size={1} />,
       })
-      onAddChallenge(res.data)
-      navigate(`/admin/games/${id}/challenges/${res.data.id}`)
+      onAddChallenge(created)
+      navigate(`/admin/games/${id}/challenges/${created.id}`)
     } catch (e) {
       showErrorMsg(e, t)
     } finally {
