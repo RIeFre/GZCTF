@@ -244,19 +244,24 @@ export const ChallengeModal: FC<ChallengeModalProps> = (props) => {
     </Stack>
   )
 
+  const { size, onClose, ...restModalProps } = modalProps
+  const modalSize = size ?? '65vw'
+
+  const handleClose = () => {
+    setFlag('')
+    onClose?.()
+  }
+
   return (
     <Modal.Root
-      size="42vw"
-      {...modalProps}
-      onClose={() => {
-        setFlag('')
-        modalProps.onClose()
-      }}
+      size={modalSize}
+      {...restModalProps}
+      onClose={handleClose}
       centered
       classNames={classes}
     >
       <Modal.Overlay />
-      <Modal.Content>
+      <Modal.Content style={{ maxWidth: 'min(1100px, 90vw)', maxHeight: 'min(900px, 90vh)' }}>
         <Modal.Header>
           <Modal.Title>{title}</Modal.Title>
         </Modal.Header>
