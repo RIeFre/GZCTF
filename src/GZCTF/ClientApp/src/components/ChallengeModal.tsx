@@ -59,14 +59,19 @@ export const ChallengeModal: FC<ChallengeModalProps> = (props) => {
   const theme = useMantineTheme()
   const { locale } = useLanguage()
 
-  const placeholders = t('challenge.content.flag_placeholders', {
-    returnObjects: true,
-  }) as string[]
+  const placeholders = useMemo(
+    () =>
+      t('challenge.content.flag_placeholders', {
+        returnObjects: true,
+      }) as string[],
+    [t]
+  )
 
   const [placeholder, setPlaceholder] = useState('')
   useEffect(() => {
+    if (!placeholders.length) return
     setPlaceholder(placeholders[Math.floor(Math.random() * placeholders.length)])
-  }, [challenge, placeholders])
+  }, [challenge?.id, placeholders])
 
   const expectedSolveTimeText = useMemo(() => {
     if (!challenge?.expectedSolveTimeUtc) return null
