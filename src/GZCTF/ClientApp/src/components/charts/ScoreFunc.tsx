@@ -26,6 +26,8 @@ export const ScoreFunc: FC<ScoreFuncProps> = ({ originalScore, difficulty, minSc
   const { t } = useTranslation()
   const primaryColors = theme.colors[theme.primaryColor]
   const color = primaryColors[colorScheme === 'dark' ? 8 : 6]
+  const minScore = originalScore * minScoreRate
+  const minChartScore = Math.min(minScore, originalScore * 0.6)
 
   const option: EChartsOption = useMemo(
     () =>
@@ -44,8 +46,8 @@ export const ScoreFunc: FC<ScoreFuncProps> = ({ originalScore, difficulty, minSc
         },
         yAxis: {
           name: t('admin.content.games.challenges.score'),
-          min: 0,
-          max: Math.ceil((originalScore * 1.2) / 100) * 100,
+          min: Math.floor(minChartScore),
+          max: originalScore,
         },
         series: [
           {
@@ -76,7 +78,7 @@ export const ScoreFunc: FC<ScoreFuncProps> = ({ originalScore, difficulty, minSc
               symbol: 'none',
               data: [
                 {
-                  yAxis: Math.floor(originalScore * minScoreRate),
+                  yAxis: Math.floor(minScore),
                   label: {
                     position: 'end',
                     formatter: 'min: {c}',
@@ -87,7 +89,7 @@ export const ScoreFunc: FC<ScoreFuncProps> = ({ originalScore, difficulty, minSc
           },
         ],
       }) satisfies EChartsOption,
-    [theme, originalScore, difficulty, minScoreRate, currentAcceptCount]
+    [theme, originalScore, difficulty, minScoreRate, currentAcceptCount, color, minScore, minChartScore]
   )
 
   return (

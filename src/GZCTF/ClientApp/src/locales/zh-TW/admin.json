@@ -145,6 +145,15 @@
           "description": "最低分值：{{min_score}}pts",
           "label": "最低分比例"
         },
+        "expected_time": {
+          "label": "應完成時間",
+          "description": "在此時間前解出可獲得完整動態分。",
+          "date": "應完成日期",
+          "time": "應完成時間",
+          "timezone_hint": "時間均按北京時間 (UTC+8) 計算。",
+          "list": "應完成：{{time}}（{{timezone}}）",
+          "score_hint": "超過應完成時間後，解題固定獲得 {{score}} 分（60% 分值與最低分值中的較小值）。"
+        },
         "score": "題目分值",
         "service_port": {
           "description": "容器內服務的埠號",

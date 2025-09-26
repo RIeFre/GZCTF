@@ -19,6 +19,9 @@
     },
     "submit_flag": "提交 flag"
   },
+  "card": {
+    "expected_time": "應完成時間：{{time}}（{{timezone}}）"
+  },
   "category": {
     "ai": "人工智能安全",
     "blockchain": "區塊鏈",

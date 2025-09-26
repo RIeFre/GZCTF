@@ -12,9 +12,10 @@ import {
 } from '@mantine/core'
 import { mdiDatabaseEditOutline, mdiPuzzleEditOutline } from '@mdi/js'
 import { Icon } from '@mdi/react'
-import { Dispatch, FC, SetStateAction, useState } from 'react'
+import { Dispatch, FC, SetStateAction, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router'
+import { useLanguage } from '@Utils/I18n'
 import { useChallengeCategoryLabelMap } from '@Utils/Shared'
 import { ChallengeInfoModel, ChallengeCategory } from '@Api'
 import classes from '@Styles/ChallengeEditCard.module.css'
@@ -34,6 +35,7 @@ export const ChallengeEditCard: FC<ChallengeEditCardProps> = ({ challenge, onTog
 
   const { t } = useTranslation()
   const { colorScheme } = useMantineColorScheme()
+  const { locale } = useLanguage()
 
   const color = data?.color ?? theme.primaryColor
   const colors = theme.colors[color]
@@ -46,6 +48,17 @@ export const ChallengeEditCard: FC<ChallengeEditCardProps> = ({ challenge, onTog
   const curRate = (cur / tot) * 100
 
   const contentWidth = 'calc(100% - 12rem)'
+  const expectedSolveTimeText = useMemo(() => {
+    if (!challenge?.expectedSolveTimeUtc) return null
+
+    const formatter = new Intl.DateTimeFormat(locale ?? 'zh-CN', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+      timeZone: 'Asia/Shanghai',
+    })
+
+    return formatter.format(new Date(challenge.expectedSolveTimeUtc))
+  }, [challenge?.expectedSolveTimeUtc, locale])
 
   return (
     <Card shadow="sm" p="sm">
@@ -59,7 +72,7 @@ export const ChallengeEditCard: FC<ChallengeEditCardProps> = ({ challenge, onTog
 
         <Icon path={data!.icon} color={theme.colors[data?.color ?? theme.primaryColor][5]} size={1.2} />
 
-        <Stack gap={0} maw={contentWidth} miw={contentWidth}>
+        <Stack gap={4} maw={contentWidth} miw={contentWidth}>
           <Text truncate fw="bold">
             {challenge.title}
           </Text>
@@ -69,6 +82,14 @@ export const ChallengeEditCard: FC<ChallengeEditCardProps> = ({ challenge, onTog
               /{challenge.originalScore}pts
             </Text>
           </Text>
+          {expectedSolveTimeText && (
+            <Text size="xs" c="dimmed" ff="monospace">
+              {t('admin.content.games.challenges.expected_time.list', {
+                time: expectedSolveTimeText,
+                timezone: 'UTC+8',
+              })}
+            </Text>
+          )}
         </Stack>
 
         <Tooltip label={t('admin.button.challenges.edit')} position="left" offset={10} classNames={classes}>

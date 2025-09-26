@@ -16,8 +16,8 @@ import { mdiFlag } from '@mdi/js'
 import { Icon } from '@mdi/react'
 import cx from 'clsx'
 import dayjs from 'dayjs'
-import { FC } from 'react'
-import { Trans } from 'react-i18next'
+import { FC, useMemo } from 'react'
+import { Trans, useTranslation } from 'react-i18next'
 import { ScrollingText } from '@Components/ScrollingText'
 import { useLanguage } from '@Utils/I18n'
 import { BloodsTypes, PartialIconProps, useChallengeCategoryLabelMap } from '@Utils/Shared'
@@ -41,6 +41,19 @@ export const ChallengeCard: FC<ChallengeCardProps> = (props: ChallengeCardProps)
   const cateData = challengeCategoryLabelMap.get(challenge.category!)
   const theme = useMantineTheme()
   const { locale } = useLanguage()
+  const { t } = useTranslation()
+
+  const expectedSolveTimeText = useMemo(() => {
+    if (!challenge?.expectedSolveTimeUtc) return null
+
+    const formatter = new Intl.DateTimeFormat(locale ?? 'zh-CN', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+      timeZone: 'Asia/Shanghai',
+    })
+
+    return formatter.format(new Date(challenge.expectedSolveTimeUtc))
+  }, [challenge?.expectedSolveTimeUtc, locale])
 
   return (
     <Card
@@ -114,6 +127,14 @@ export const ChallengeCard: FC<ChallengeCardProps> = (props: ChallengeCardProps)
             </Group>
           </Stack>
         </Group>
+        {expectedSolveTimeText && (
+          <Text size="xs" c="dimmed" ta="center" ff="monospace">
+            {t('challenge.card.expected_time', {
+              time: expectedSolveTimeText,
+              timezone: 'UTC+8',
+            })}
+          </Text>
+        )}
       </Stack>
       {cateData && (
         <Icon

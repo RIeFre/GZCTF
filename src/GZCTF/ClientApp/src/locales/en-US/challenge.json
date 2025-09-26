@@ -19,6 +19,9 @@
     },
     "submit_flag": "Submit Flag"
   },
+  "card": {
+    "expected_time": "Expected: {{time}} ({{timezone}})"
+  },
   "category": {
     "ai": "AI security",
     "blockchain": "Blockchain",

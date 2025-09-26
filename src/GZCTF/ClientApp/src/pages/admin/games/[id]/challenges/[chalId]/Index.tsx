@@ -1,10 +1,12 @@
 import {
+  Box,
   Button,
   ComboboxItem,
   Grid,
   Group,
   Input,
   NumberInput,
+  Paper,
   Select,
   Slider,
   Stack,
@@ -384,116 +386,129 @@ const GameChallengeEdit: FC = () => {
               />
             </Stack>
           </Grid.Col>
-          <Grid.Col span={1}>
-            <Stack h="100%">
-              <Group wrap="nowrap">
-                <NumberInput
-                  label={t('admin.content.games.challenges.score')}
-                  min={0}
-                  required
-                  disabled={disabled}
-                  stepHoldDelay={500}
-                  stepHoldInterval={(t) => Math.max(1000 / t ** 2, 25)}
-                  value={challengeInfo?.originalScore ?? 500}
-                  onChange={(e) => typeof e !== 'string' && setChallengeInfo({ ...challengeInfo, originalScore: e })}
-                />
-                <NumberInput
-                  label={t('admin.content.games.challenges.difficulty')}
-                  decimalScale={2}
-                  fixedDecimalScale
-                  step={0.2}
-                  min={0.1}
-                  required
-                  disabled={disabled}
-                  value={challengeInfo?.difficulty ?? 100}
-                  stepHoldDelay={500}
-                  stepHoldInterval={(t) => Math.max(1000 / t ** 2, 25)}
-                  onChange={(e) => typeof e !== 'string' && setChallengeInfo({ ...challengeInfo, difficulty: e })}
-                />
-              </Group>
-              <Input.Wrapper label={t('admin.content.games.challenges.min_score_radio.label')} h="3.8rem" required>
-                <Slider
-                  label={(value) =>
-                    t('admin.content.games.challenges.min_score_radio.description', {
-                      min_score: ((value / 100) * (challengeInfo?.originalScore ?? 500)).toFixed(0),
-                    })
-                  }
-                  disabled={disabled}
-                  value={minRate}
-                  marks={[
-                    { value: 20, label: '20%' },
-                    { value: 50, label: '50%' },
-                    { value: 80, label: '80%' },
-                  ]}
-                  onChange={setMinRate}
-                  classNames={{ label: misc.challEditLabel }}
-                />
-              </Input.Wrapper>
-              <Input.Wrapper
-                label={t('admin.content.games.challenges.expected_time.label')}
-                description={t('admin.content.games.challenges.expected_time.description')}
-              >
-                <Stack gap="xs">
-                  <Group wrap="nowrap" align="flex-end" gap="sm">
-                    <DatePickerInput
-                      value={expectedSolveTime.toDate()}
-                      label={t('admin.content.games.challenges.expected_time.date')}
-                      clearable={false}
-                      disabled={disabled}
-                      onChange={(value) => {
-                        const next = dayjs(value ?? expectedSolveTime.toDate())
-                          .hour(expectedSolveTime.hour())
-                          .minute(expectedSolveTime.minute())
-                          .second(0)
-                          .millisecond(0)
-                        setExpectedSolveTime(next)
-                        setChallengeInfo((prev) => ({ ...prev, expectedSolveTimeUtc: next.valueOf() }))
-                      }}
-                    />
-                    <TimeInput
-                      value={expectedSolveTime.format('HH:mm')}
-                      label={t('admin.content.games.challenges.expected_time.time')}
-                      disabled={disabled}
-                      onChange={(event) => {
-                        const [hour = '0', minute = '0'] = event.currentTarget.value.split(':')
-                        const next = dayjs(expectedSolveTime)
-                          .hour(Number(hour))
-                          .minute(Number(minute))
-                          .second(0)
-                          .millisecond(0)
-                        setExpectedSolveTime(next)
-                        setChallengeInfo((prev) => ({ ...prev, expectedSolveTimeUtc: next.valueOf() }))
-                      }}
-                    />
-                  </Group>
-                  <Text size="xs" c="dimmed">
-                    {t('admin.content.games.challenges.expected_time.timezone_hint')}
-                  </Text>
-                  <Text size="xs" c="dimmed">
-                    {t('admin.content.games.challenges.expected_time.score_hint', {
-                      score: lateScorePreview,
-                    })}
-                  </Text>
-                </Stack>
-              </Input.Wrapper>
-              <Switch
-                disabled={disabled}
-                checked={!challengeInfo?.disableBloodBonus}
-                label={SwitchLabel(
-                  t('admin.content.games.challenges.blood_bonus.label'),
-                  t('admin.content.games.challenges.blood_bonus.description')
-                )}
-                onChange={(e) => setChallengeInfo({ ...challengeInfo, disableBloodBonus: !e.target.checked })}
-              />
-            </Stack>
-          </Grid.Col>
-          <Grid.Col span={1}>
-            <ScoreFunc
-              currentAcceptCount={currentAcceptCount}
-              originalScore={challengeInfo.originalScore ?? 500}
-              minScoreRate={minRate / 100}
-              difficulty={challengeInfo.difficulty ?? 30}
-            />
+          <Grid.Col span={2}>
+            <Paper withBorder radius="md" p="md" style={{ height: '100%' }}>
+              <Stack gap="lg">
+                <Group wrap="nowrap" align="flex-start" gap="md">
+                  <Stack gap="xs" style={{ minWidth: '19rem' }}>
+                    <Group wrap="nowrap" align="flex-end" gap="md">
+                      <NumberInput
+                        label={t('admin.content.games.challenges.score')}
+                        min={0}
+                        required
+                        disabled={disabled}
+                        stepHoldDelay={500}
+                        stepHoldInterval={(t) => Math.max(1000 / t ** 2, 25)}
+                        value={challengeInfo?.originalScore ?? 500}
+                        onChange={(value) => {
+                          const numeric = Number(value)
+                          if (Number.isNaN(numeric)) return
+                          setChallengeInfo((prev) => ({ ...prev, originalScore: numeric }))
+                        }}
+                        style={{ width: '9rem' }}
+                      />
+                      <NumberInput
+                        label={t('admin.content.games.challenges.difficulty')}
+                        decimalScale={2}
+                        fixedDecimalScale
+                        step={0.2}
+                        min={0.1}
+                        required
+                        disabled={disabled}
+                        value={challengeInfo?.difficulty ?? 5}
+                        stepHoldDelay={500}
+                        stepHoldInterval={(t) => Math.max(1000 / t ** 2, 25)}
+                        onChange={(value) => {
+                          const numeric = Number(value)
+                          if (Number.isNaN(numeric)) return
+                          setChallengeInfo((prev) => ({ ...prev, difficulty: numeric }))
+                        }}
+                        style={{ width: '9rem' }}
+                      />
+                    </Group>
+                  </Stack>
+                  <Box style={{ flex: 1 }}>
+                    <Stack gap="xs">
+                      <Group wrap="nowrap" align="flex-end" gap="sm">
+                        <DatePickerInput
+                          value={expectedSolveTime.toDate()}
+                          label={t('admin.content.games.challenges.expected_time.date')}
+                          clearable={false}
+                          disabled={disabled}
+                          onChange={(value) => {
+                            const next = dayjs(value ?? expectedSolveTime.toDate())
+                              .hour(expectedSolveTime.hour())
+                              .minute(expectedSolveTime.minute())
+                              .second(0)
+                              .millisecond(0)
+                            setExpectedSolveTime(next)
+                            setChallengeInfo((prev) => ({ ...prev, expectedSolveTimeUtc: next.valueOf() }))
+                          }}
+                        />
+                        <TimeInput
+                          value={expectedSolveTime.format('HH:mm')}
+                          label={t('admin.content.games.challenges.expected_time.time')}
+                          disabled={disabled}
+                          onChange={(event) => {
+                            const [hour = '0', minute = '0'] = event.currentTarget.value.split(':')
+                            const next = dayjs(expectedSolveTime)
+                              .hour(Number(hour))
+                              .minute(Number(minute))
+                              .second(0)
+                              .millisecond(0)
+                            setExpectedSolveTime(next)
+                            setChallengeInfo((prev) => ({ ...prev, expectedSolveTimeUtc: next.valueOf() }))
+                          }}
+                        />
+                      </Group>
+                    </Stack>
+                  </Box>
+                </Group>
+
+                <Group wrap="nowrap" align="flex-end" gap="md">
+                  <Box style={{ flex: 1 }}>
+                    <Input.Wrapper label={t('admin.content.games.challenges.min_score_radio.label')} required>
+                      <Slider
+                        label={(value) =>
+                          t('admin.content.games.challenges.min_score_radio.description', {
+                            min_score: ((value / 100) * (challengeInfo?.originalScore ?? 500)).toFixed(0),
+                          })
+                        }
+                        disabled={disabled}
+                        value={minRate}
+                        marks={[
+                          { value: 20, label: '20%' },
+                          { value: 50, label: '50%' },
+                          { value: 80, label: '80%' },
+                        ]}
+                        onChange={setMinRate}
+                        classNames={{ label: misc.challEditLabel }}
+                      />
+                    </Input.Wrapper>
+                  </Box>
+                  <Switch
+                    disabled={disabled}
+                    checked={!challengeInfo?.disableBloodBonus}
+                    label={SwitchLabel(
+                      t('admin.content.games.challenges.blood_bonus.label'),
+                      t('admin.content.games.challenges.blood_bonus.description')
+                    )}
+                    onChange={(e) =>
+                      setChallengeInfo({ ...challengeInfo, disableBloodBonus: !e.target.checked })
+                    }
+                  />
+                </Group>
+
+                <Box style={{ width: '100%', height: 200 }}>
+                  <ScoreFunc
+                    currentAcceptCount={currentAcceptCount}
+                    originalScore={challengeInfo.originalScore ?? 500}
+                    minScoreRate={minRate / 100}
+                    difficulty={challengeInfo.difficulty ?? 30}
+                  />
+                </Box>
+              </Stack>
+            </Paper>
           </Grid.Col>
         </Grid>
         {type === ChallengeType.DynamicAttachment && (

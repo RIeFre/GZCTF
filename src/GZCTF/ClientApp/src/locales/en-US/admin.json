@@ -151,6 +151,7 @@
           "date": "Due Date",
           "time": "Due Time",
           "timezone_hint": "Times are displayed in Beijing time (UTC+8).",
+          "list": "Expected: {{time}} ({{timezone}})",
           "score_hint": "After the deadline, each solve awards {{score}} pts (the smaller of 60% or the minimum score)."
         },
         "score": "Score",
