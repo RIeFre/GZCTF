@@ -8,7 +8,7 @@ import { FC, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router'
 import { Empty } from '@Components/Empty'
-import { InlineMarkdown } from '@Components/MarkdownRenderer'
+import { Markdown } from '@Components/MarkdownRenderer'
 import { useLanguage } from '@Utils/I18n'
 import { NoticTypeIconMap } from '@Utils/Shared'
 import { OnceSWRConfig } from '@Hooks/useConfig'
@@ -180,7 +180,11 @@ export const GameNoticePanel: FC = () => {
                       {dayjs(notice.time).locale(locale).format('SLL LTS')}
                     </Text>
                     {notice.type === NoticeType.Normal ? (
-                      <InlineMarkdown fz="sm" fw={500} c="dimmed" source={formatNotice(t, notice)} />
+                      <Markdown
+                        className={typoClasses.inline}
+                        style={{ color: 'var(--mantine-color-dimmed)', fontSize: 'var(--mantine-font-size-sm)' }}
+                        source={formatNotice(t, notice)}
+                      />
                     ) : (
                       <Text fz="sm" fw={500} c="dimmed" className={typoClasses.inline}>
                         {formatNotice(t, notice)}
