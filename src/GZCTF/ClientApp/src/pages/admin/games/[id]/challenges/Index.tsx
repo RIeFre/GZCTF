@@ -1,13 +1,14 @@
 import { Button, Center, ComboboxItem, Group, ScrollArea, Select, SimpleGrid, Stack, Text, Title } from '@mantine/core'
 import { useModals } from '@mantine/modals'
 import { showNotification } from '@mantine/notifications'
-import { mdiCheck, mdiHexagonSlice6, mdiPlus, mdiRefresh } from '@mdi/js'
+import { mdiCheck, mdiContentCopy, mdiHexagonSlice6, mdiPlus, mdiRefresh } from '@mdi/js'
 import { Icon } from '@mdi/react'
 import { Dispatch, FC, SetStateAction, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router'
 import { BloodBonusModel } from '@Components/admin/BloodBonusModel'
 import { ChallengeCreateModal } from '@Components/admin/ChallengeCreateModal'
+import { ChallengeCopyModal } from '@Components/admin/ChallengeCopyModal'
 import { ChallengeEditCard } from '@Components/admin/ChallengeEditCard'
 import { WithGameEditTab } from '@Components/admin/WithGameEditTab'
 import { showErrorMsg } from '@Utils/Shared'
@@ -21,6 +22,7 @@ const GameChallengeEdit: FC = () => {
 
   const [createOpened, setCreateOpened] = useState(false)
   const [bonusOpened, setBonusOpened] = useState(false)
+  const [copyOpened, setCopyOpened] = useState(false)
   const [category, setCategory] = useState<ChallengeCategory | null>(null)
   const challengeCategoryLabelMap = useChallengeCategoryLabelMap()
   const [disabled, setDisabled] = useState(false)
@@ -113,6 +115,9 @@ const GameChallengeEdit: FC = () => {
             <Button leftSection={<Icon path={mdiRefresh} size={1} />} disabled={disabled} onClick={onUpdateAcceptCount}>
               {t('admin.button.challenges.update_accept_count')}
             </Button>
+            <Button leftSection={<Icon path={mdiContentCopy} size={1} />} onClick={() => setCopyOpened(true)}>
+              {t('admin.button.challenges.copy_from_game')}
+            </Button>
             <Button leftSection={<Icon path={mdiHexagonSlice6} size={1} />} onClick={() => setBonusOpened(true)}>
               {t('admin.button.challenges.bonus')}
             </Button>
@@ -146,6 +151,14 @@ const GameChallengeEdit: FC = () => {
         opened={createOpened}
         onClose={() => setCreateOpened(false)}
         onAddChallenge={(challenge) => mutate([challenge, ...(challenges ?? [])])}
+      />
+      <ChallengeCopyModal
+        opened={copyOpened}
+        onClose={() => setCopyOpened(false)}
+        currentGameId={numId}
+        onCopied={async (_newChallenges) => {
+          await mutate()
+        }}
       />
       <BloodBonusModel
         title={t('admin.button.challenges.bonus')}

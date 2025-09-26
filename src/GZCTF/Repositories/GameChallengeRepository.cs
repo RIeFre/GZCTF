@@ -1,4 +1,6 @@
-﻿using GZCTF.Models.Request.Edit;
+﻿using System.Linq;
+using GZCTF.Models.Data;
+using GZCTF.Models.Request.Edit;
 using GZCTF.Repositories.Interface;
 using GZCTF.Services.Cache;
 using Microsoft.EntityFrameworkCore;
@@ -33,6 +35,83 @@ public class GameChallengeRepository(
         return challenge;
     }
 
+    public async Task<GameChallenge[]> CloneChallenges(Game game, IEnumerable<GameChallenge> sourceChallenges,
+        CancellationToken token = default)
+    {
+        var clones = new List<GameChallenge>();
+
+        foreach (var source in sourceChallenges)
+        {
+            var clone = new GameChallenge
+            {
+                Title = source.Title,
+                Content = source.Content,
+                Category = source.Category,
+                Type = source.Type,
+                Hints = source.Hints is null ? null : new List<string>(source.Hints),
+                IsEnabled = false,
+                SubmissionLimit = source.SubmissionLimit,
+                ContainerImage = source.ContainerImage,
+                MemoryLimit = source.MemoryLimit,
+                StorageLimit = source.StorageLimit,
+                CPUCount = source.CPUCount,
+                ContainerExposePort = source.ContainerExposePort,
+                FileName = source.FileName,
+                FlagTemplate = source.FlagTemplate,
+                EnableTrafficCapture = source.EnableTrafficCapture,
+                DisableBloodBonus = source.DisableBloodBonus,
+                OriginalScore = source.OriginalScore,
+                MinScoreRate = source.MinScoreRate,
+                Difficulty = source.Difficulty,
+                ExpectedSolveTimeUtc = GameChallenge.GetDefaultExpectedSolveTime(),
+                AcceptedCount = 0,
+                SubmissionCount = 0,
+                Game = game
+            };
+
+            clone.Attachment = CloneAttachment(source.Attachment);
+
+            foreach (var flag in source.Flags.OrderBy(f => f.Id))
+            {
+                var flagClone = new FlagContext
+                {
+                    Flag = flag.Flag,
+                    IsOccupied = false,
+                    Attachment = CloneAttachment(flag.Attachment)
+                };
+
+                clone.Flags.Add(flagClone);
+            }
+
+            await Context.AddAsync(clone, token);
+            game.Challenges.Add(clone);
+            clones.Add(clone);
+        }
+
+        await SaveAsync(token);
+        await cacheHelper.FlushScoreboardCache(game.Id, token);
+
+        return clones.ToArray();
+    }
+
+    private Attachment? CloneAttachment(Attachment? attachment)
+    {
+        if (attachment is null || attachment.Type == FileType.None)
+            return null;
+
+        var clone = new Attachment
+        {
+            Type = attachment.Type,
+            RemoteUrl = attachment.RemoteUrl,
+            LocalFile = attachment.Type == FileType.Local ? attachment.LocalFile : null
+        };
+
+        if (clone.LocalFile is not null)
+            clone.LocalFile.ReferenceCount++;
+
+        return clone;
+    }
+
     public async Task<bool> EnsureInstances(GameChallenge challenge, Game game, CancellationToken token = default)
     {
         await Context.Entry(challenge).Collection(c => c.Teams).LoadAsync(token);
@@ -55,6 +134,30 @@ public class GameChallengeRepository(
 
     public Task<GameChallenge[]> GetChallenges(int gameId, CancellationToken token = default) =>
         Context.GameChallenges.Where(c => c.GameId == gameId).OrderBy(c => c.Id).ToArrayAsync(token);
+
+    public Task<GameChallenge[]> GetChallengesForClone(int gameId, IEnumerable<int>? challengeIds,
+        CancellationToken token = default)
+    {
+        var query = Context.GameChallenges
+            .AsSplitQuery()
+            .Include(c => c.Attachment)
+                .ThenInclude(a => a!.LocalFile)
+            .Include(c => c.Flags)
+                .ThenInclude(f => f.Attachment)
+                .ThenInclude(a => a!.LocalFile)
+            .Where(c => c.GameId == gameId)
+            .OrderBy(c => c.Id)
+            .AsQueryable();
+
+        if (challengeIds is not null)
+        {
+            var idArray = challengeIds.Distinct().ToArray();
+            if (idArray.Length > 0)
+                query = query.Where(c => idArray.Contains(c.Id));
+        }
+
+        return query.ToArrayAsync(token);
+    }
 
     public Task<GameChallenge[]> GetChallengesWithTrafficCapturing(int gameId, CancellationToken token = default) =>
         Context.GameChallenges.IgnoreAutoIncludes().Where(c => c.GameId == gameId && c.EnableTrafficCapture)

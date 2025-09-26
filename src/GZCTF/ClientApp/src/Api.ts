@@ -1193,6 +1193,17 @@ export interface ChallengeInfoModel {
   lateSolveScore?: number;
 }
 
+/** Challenge copy request (Edit) */
+export interface ChallengeCopyModel {
+  /**
+   * Source game ID
+   * @format int32
+   */
+  sourceGameId: number;
+  /** Challenge IDs to copy */
+  challengeIds?: number[] | null;
+}
+
 /** Challenge update information (Edit) */
 export interface ChallengeUpdateModel {
   /**
@@ -4024,6 +4035,28 @@ export class Api<
       this.request<ChallengeEditDetailModel, RequestResponse>({
         path: `/api/edit/games/${id}/challenges/${cId}`,
         method: "PUT",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Copy challenges from another game; requires administrator privileges
+     *
+     * @tags Edit
+     * @name EditCopyGameChallenges
+     * @summary Copy Game Challenges
+     * @request POST:/api/edit/games/{id}/challenges/copy
+     */
+    editCopyGameChallenges: (
+      id: number,
+      data: ChallengeCopyModel,
+      params: RequestParams = {},
+    ) =>
+      this.request<ChallengeInfoModel[], RequestResponse>({
+        path: `/api/edit/games/${id}/challenges/copy`,
+        method: "POST",
         body: data,
         type: ContentType.Json,
         format: "json",

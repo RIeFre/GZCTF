@@ -8,6 +8,7 @@
         "uploading": "上傳中……"
       },
       "bonus": "三血獎勵",
+      "copy_from_game": "複製賽題",
       "delete": "刪除題目",
       "disable": "禁用題目",
       "edit": "編輯題目",
@@ -154,6 +155,19 @@
           "timezone_hint": "時間均按北京時間 (UTC+8) 計算。",
           "list": "應完成：{{time}}（{{timezone}}）",
           "score_hint": "超過應完成時間後，解題固定獲得 {{score}} 分（60% 分值與最低分值中的較小值）。"
+        },
+        "copy": {
+          "title": "複製賽題",
+          "source_label": "來源賽事",
+          "source_placeholder": "選擇一個賽事",
+          "challenge_label": "賽題列表",
+          "challenge_placeholder": "選擇要複製的賽題",
+          "copy_all": "複製全部賽題",
+          "no_games": "暫無可用賽事",
+          "no_challenges": "該賽事暫無賽題",
+          "confirm": "複製",
+          "select_warning": "請選擇至少一個賽題或勾選複製全部",
+          "source_required": "請先選擇來源賽事"
         },
         "score": "題目分值",
         "service_port": {
@@ -410,7 +424,8 @@
           "attachment_downloaded": "假裝附件已經下載了！",
           "flag_submitted": "flag 似乎被正確提交了！"
         },
-        "updated": "題目已更新"
+        "updated": "題目已更新",
+        "copied": "賽題複製完成"
       },
       "created": "比賽已創建",
       "info": {

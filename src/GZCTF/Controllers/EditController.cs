@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Linq;
 using System.Net.Mime;
 using GZCTF.Extensions;
 using GZCTF.Middlewares;
@@ -201,6 +202,50 @@ public class EditController(
                 StatusCodes.Status404NotFound));
 
         return Ok(game.TeamHashSalt);
+    }
+
+    /// <summary>
+    /// Copy challenges from another game
+    /// </summary>
+    /// <remarks>
+    /// Copy challenges from another game; requires administrator privileges
+    /// </remarks>
+    /// <param name="id">Target game ID</param>
+    /// <param name="model">Copy request</param>
+    /// <param name="token"></param>
+    /// <response code="200">Successfully copied challenges</response>
+    [HttpPost("Games/{id:int}/Challenges/Copy")]
+    [ProducesResponseType(typeof(ChallengeInfoModel[]), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(RequestResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(RequestResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> CopyGameChallenges([FromRoute] int id, [FromBody] ChallengeCopyModel model,
+        CancellationToken token)
+    {
+        var targetGame = await gameRepository.GetGameById(id, token);
+
+        if (targetGame is null)
+            return NotFound(new RequestResponse(localizer[nameof(Resources.Program.Game_NotFound)],
+                StatusCodes.Status404NotFound));
+
+        var sourceGame = await gameRepository.GetGameById(model.SourceGameId, token);
+
+        if (sourceGame is null)
+            return NotFound(new RequestResponse(localizer[nameof(Resources.Program.Game_NotFound)],
+                StatusCodes.Status404NotFound));
+
+        var requestedIds = model.ChallengeIds?.Where(c => c > 0).Distinct().ToArray();
+        var sourceChallenges = await challengeRepository.GetChallengesForClone(model.SourceGameId, requestedIds, token);
+
+        if (requestedIds is { Length: > 0 } && sourceChallenges.Length == 0)
+            return NotFound(new RequestResponse(localizer[nameof(Resources.Program.Challenge_NotFound)],
+                StatusCodes.Status404NotFound));
+
+        if (sourceChallenges.Length == 0)
+            return BadRequest(new RequestResponse(localizer[nameof(Resources.Program.Challenge_NotFound)]));
+
+        var clones = await challengeRepository.CloneChallenges(targetGame, sourceChallenges, token);
+
+        return Ok(clones.Select(ChallengeInfoModel.FromChallenge).ToArray());
     }
 
     /// <summary>

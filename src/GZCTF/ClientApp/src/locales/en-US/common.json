@@ -6,6 +6,7 @@
     "uploading": "Uploading avatar"
   },
   "button": {
+    "cancel": "Cancel",
     "copy": "Copy to Clipboard",
     "reset": "Reset",
     "retry": "Retry",
@@ -58,6 +59,7 @@
       "recent_games": "Recent Games"
     },
     "no_data": "No data",
+    "loading": "Loading...",
     "report_error": "Please report this error to the administrator if you think this is a bug",
     "wider": {
       "text": "Try to use a wider device",

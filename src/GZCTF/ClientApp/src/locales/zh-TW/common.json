@@ -6,6 +6,7 @@
     "uploading": "正在上傳頭像"
   },
   "button": {
+    "cancel": "取消",
     "copy": "複製到剪貼板",
     "reset": "重置",
     "retry": "重試",
@@ -58,6 +59,7 @@
       "recent_games": "近期比賽"
     },
     "no_data": "沒有數據",
+    "loading": "載入中...",
     "report_error": "如果你認為這是一個異常錯誤，請聯繫管理員",
     "wider": {
       "text": "請使用更寬的設備瀏覽本頁面",

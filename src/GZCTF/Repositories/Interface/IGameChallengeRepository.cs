@@ -1,4 +1,5 @@
-﻿using GZCTF.Models.Request.Edit;
+﻿using GZCTF.Models.Data;
+using GZCTF.Models.Request.Edit;
 
 namespace GZCTF.Repositories.Interface;
 
@@ -12,6 +13,16 @@ public interface IGameChallengeRepository : IRepository
     /// <param name="token"></param>
     /// <returns></returns>
     public Task<GameChallenge> CreateChallenge(Game game, GameChallenge challenge, CancellationToken token = default);
+
+    /// <summary>
+    /// Clone challenges and attach them to the specified game.
+    /// </summary>
+    /// <param name="game">Target game.</param>
+    /// <param name="sourceChallenges">Source challenges to clone.</param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    public Task<GameChallenge[]> CloneChallenges(Game game, IEnumerable<GameChallenge> sourceChallenges,
+        CancellationToken token = default);
 
     /// <summary>
     /// Remove a challenge
@@ -29,6 +40,16 @@ public interface IGameChallengeRepository : IRepository
     /// <param name="token"></param>
     /// <returns></returns>
     public Task<GameChallenge[]> GetChallenges(int gameId, CancellationToken token = default);
+
+    /// <summary>
+    /// Get challenges for cloning with attachments and flags loaded.
+    /// </summary>
+    /// <param name="gameId">Source game ID</param>
+    /// <param name="challengeIds">Optional list of challenge IDs, null or empty to fetch all challenges.</param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    public Task<GameChallenge[]> GetChallengesForClone(int gameId, IEnumerable<int>? challengeIds,
+        CancellationToken token = default);
 
     /// <summary>
     /// Get a specific challenge by game ID and challenge ID, without loading Flags

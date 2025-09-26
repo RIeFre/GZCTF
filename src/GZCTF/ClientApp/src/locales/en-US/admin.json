@@ -8,6 +8,7 @@
         "uploading": "Uploading..."
       },
       "bonus": "Triple Blood Bonus",
+      "copy_from_game": "Copy Challenges",
       "delete": "Delete",
       "disable": "Disable",
       "edit": "Edit Challenge",
@@ -154,6 +155,19 @@
           "timezone_hint": "Times are displayed in Beijing time (UTC+8).",
           "list": "Expected: {{time}} ({{timezone}})",
           "score_hint": "After the deadline, each solve awards {{score}} pts (the smaller of 60% or the minimum score)."
+        },
+        "copy": {
+          "title": "Copy Challenges",
+          "source_label": "Source Game",
+          "source_placeholder": "Select a game",
+          "challenge_label": "Challenges",
+          "challenge_placeholder": "Select challenges to copy",
+          "copy_all": "Copy all challenges",
+          "no_games": "No games available",
+          "no_challenges": "No challenges available",
+          "confirm": "Copy",
+          "select_warning": "Please select at least one challenge or copy all",
+          "source_required": "Please select a source game first"
         },
         "score": "Score",
         "service_port": {
@@ -410,7 +424,8 @@
           "attachment_downloaded": "Pretend the attachment has been downloaded!",
           "flag_submitted": "Flag submitted!"
         },
-        "updated": "Challenge updated"
+        "updated": "Challenge updated",
+        "copied": "Challenges copied"
       },
       "created": "Game created",
       "info": {
