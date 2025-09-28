@@ -112,6 +112,7 @@ export enum ParticipationStatus {
   Rejected = "Rejected",
   Suspended = "Suspended",
   Unsubmitted = "Unsubmitted",
+  Hidden = "Hidden",
 }
 
 /** User role enumeration */
@@ -1567,6 +1568,8 @@ export interface ScoreboardItem {
    * @format int32
    */
   solvedCount?: number;
+  /** Hidden from public scoreboard */
+  isHidden?: boolean;
 }
 
 export interface ChallengeItem {

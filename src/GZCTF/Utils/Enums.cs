@@ -275,7 +275,21 @@ public enum ParticipationStatus : byte
     /// <summary>
     /// Not submitted
     /// </summary>
-    Unsubmitted = 4
+    Unsubmitted = 4,
+
+    /// <summary>
+    /// Hidden from scoreboard
+    /// </summary>
+    Hidden = 5
+}
+
+public static class ParticipationStatusExtensions
+{
+    /// <summary>
+    /// Determine whether the team is allowed to play in the game
+    /// </summary>
+    public static bool IsActive(this ParticipationStatus status) =>
+        status == ParticipationStatus.Accepted || status == ParticipationStatus.Hidden;
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter<ChallengeType>))]

@@ -19,6 +19,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Options;
+using GZCTF.Utils;
 
 namespace GZCTF.Controllers;
 
@@ -1291,7 +1292,7 @@ public class GameController(
 
         res.Participation = part;
 
-        if (part.Status != ParticipationStatus.Accepted)
+        if (!part.Status.IsActive())
             return res.WithResult(
                 BadRequest(new RequestResponse(localizer[nameof(Resources.Program.Game_ParticipationNotAccepted)])));
 

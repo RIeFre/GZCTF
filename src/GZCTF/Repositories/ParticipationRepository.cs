@@ -2,12 +2,14 @@
 using GZCTF.Repositories.Interface;
 using GZCTF.Services.Cache;
 using Microsoft.EntityFrameworkCore;
+using GZCTF.Utils;
 
 namespace GZCTF.Repositories;
 
 public class ParticipationRepository(
     CacheHelper cacheHelper,
     IBlobRepository blobRepository,
+    IGameChallengeRepository challengeRepository,
     AppDbContext context) : RepositoryBase(context), IParticipationRepository
 {
     public async Task<bool> EnsureInstances(Participation part, Game game, CancellationToken token = default)
@@ -61,21 +63,28 @@ public class ParticipationRepository(
     {
         var trans = await Context.Database.BeginTransactionAsync(token);
         var needFlush = false;
+        var needRecalculateChallenges = false;
 
         if (model.Status != part.Status && model.Status is not null)
         {
             var oldStatus = part.Status;
             part.Status = model.Status.Value;
 
-            if (model.Status == ParticipationStatus.Accepted)
+            var newStatus = part.Status;
+            var visibilityChanged = oldStatus == ParticipationStatus.Hidden || newStatus == ParticipationStatus.Hidden;
+            if (visibilityChanged)
+                needRecalculateChallenges = true;
+
+            if (newStatus.IsActive())
             {
                 // lock team when accepted
                 part.Team.Locked = true;
 
                 // will also update participation status, update team lock
                 // will call SaveAsync
-                // also flush scoreboard when a team is re-accepted
-                if (await EnsureInstances(part, part.Game, token) || oldStatus == ParticipationStatus.Suspended)
+                // also flush scoreboard when visibility changes
+                if (await EnsureInstances(part, part.Game, token) || oldStatus == ParticipationStatus.Suspended ||
+                    oldStatus == ParticipationStatus.Hidden)
                     // flush scoreboard when instances are updated
                     needFlush = true;
             }
@@ -85,7 +94,10 @@ public class ParticipationRepository(
                 await SaveAsync(token);
 
                 // flush scoreboard when a team is suspended
-                if (model.Status == ParticipationStatus.Suspended && part.Game.IsActive)
+                if (newStatus == ParticipationStatus.Suspended && part.Game.IsActive)
+                    needFlush = true;
+
+                if (oldStatus.IsActive())
                     needFlush = true;
             }
         }
@@ -101,6 +113,9 @@ public class ParticipationRepository(
         }
 
         await trans.CommitAsync(token);
+
+        if (needRecalculateChallenges)
+            await challengeRepository.RecalculateAcceptedCount(part.Game, token);
 
         if (needFlush)
             await cacheHelper.FlushScoreboardCache(part.GameId, token);

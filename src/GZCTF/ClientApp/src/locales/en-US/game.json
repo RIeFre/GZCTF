@@ -185,6 +185,7 @@
   "participation": {
     "actions": {
       "accepted": "Approved",
+      "hidden": "Hidden",
       "pending": "Pending review",
       "rejected": "Re-Sign Up",
       "suspended": "Banned",
@@ -215,6 +216,7 @@
     },
     "status": {
       "accepted": "Approved",
+      "hidden": "Hidden",
       "pending": "Pending",
       "rejected": "Rejected",
       "suspended": "Banned"

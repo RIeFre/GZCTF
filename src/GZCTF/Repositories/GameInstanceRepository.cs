@@ -4,6 +4,7 @@ using GZCTF.Services.Container.Manager;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Options;
+using GZCTF.Utils;
 
 namespace GZCTF.Repositories;
 
@@ -267,6 +268,7 @@ public class GameInstanceRepository(
             {
                 var instance = await Context.GameInstances.IgnoreAutoIncludes()
                     .Include(i => i.FlagContext)
+                    .Include(i => i.Participation)
                     .SingleOrDefaultAsync(i => i.ChallengeId == submission.ChallengeId &&
                                                i.ParticipationId == submission.ParticipationId, token);
 
@@ -296,20 +298,28 @@ public class GameInstanceRepository(
 
                 var firstTime = !instance.IsSolved && updateSub.Status == AnswerResult.Accepted;
                 var beforeEnd = submission.Game!.EndTimeUtc > submission.SubmitTimeUtc;
+                var isVisibleTeam = instance.Participation?.Status != ParticipationStatus.Hidden;
 
                 updateSub.GameChallenge!.SubmissionCount++;
 
                 if (firstTime && beforeEnd)
                 {
                     instance.IsSolved = true;
-                    updateSub.GameChallenge!.AcceptedCount++;
-                    ret = updateSub.GameChallenge.AcceptedCount switch
+                    if (isVisibleTeam)
                     {
-                        1 => SubmissionType.FirstBlood,
-                        2 => SubmissionType.SecondBlood,
-                        3 => SubmissionType.ThirdBlood,
-                        _ => SubmissionType.Normal
-                    };
+                        updateSub.GameChallenge!.AcceptedCount++;
+                        ret = updateSub.GameChallenge.AcceptedCount switch
+                        {
+                            1 => SubmissionType.FirstBlood,
+                            2 => SubmissionType.SecondBlood,
+                            3 => SubmissionType.ThirdBlood,
+                            _ => SubmissionType.Normal
+                        };
+                    }
+                    else
+                    {
+                        ret = SubmissionType.Normal;
+                    }
                 }
                 else
                 {

@@ -22,6 +22,7 @@ import {
   mdiChip,
   mdiClose,
   mdiConsole,
+  mdiEyeOff,
   mdiEthereum,
   mdiFingerprint,
   mdiFlag,
@@ -350,7 +351,7 @@ export const useParticipationStatusMap = () => {
         title: t('game.participation.status.accepted'),
         color: 'green',
         iconPath: mdiCheck,
-        transformTo: [ParticipationStatus.Suspended],
+        transformTo: [ParticipationStatus.Hidden, ParticipationStatus.Suspended],
       },
     ],
     [
@@ -368,11 +369,23 @@ export const useParticipationStatusMap = () => {
         title: t('game.participation.status.suspended'),
         color: 'alert',
         iconPath: mdiCancel,
-        transformTo: [ParticipationStatus.Accepted],
+        transformTo: [ParticipationStatus.Accepted, ParticipationStatus.Hidden],
+      },
+    ],
+    [
+      ParticipationStatus.Hidden,
+      {
+        title: t('game.participation.status.hidden'),
+        color: 'blue',
+        iconPath: mdiEyeOff,
+        transformTo: [ParticipationStatus.Accepted, ParticipationStatus.Suspended],
       },
     ],
   ])
 }
+
+export const isParticipationActive = (status?: ParticipationStatus | null) =>
+  status === ParticipationStatus.Accepted || status === ParticipationStatus.Hidden
 
 export interface BonusLabel {
   name: string

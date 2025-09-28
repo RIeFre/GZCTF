@@ -43,7 +43,7 @@ public partial class ScoreboardModel
     /// </summary>
     [MemoryPackIgnore]
     [JsonPropertyName("items")]
-    public IEnumerable<ScoreboardItem> ItemList => Items.Values;
+    public IEnumerable<ScoreboardItem> ItemList => Items.Values.Where(i => !i.IsHidden);
 
     /// <summary>
     /// Challenge information
@@ -155,6 +155,12 @@ public partial class ScoreboardItem
     /// Number of solved challenges
     /// </summary>
     public int SolvedCount => SolvedChallenges.Count;
+
+    /// <summary>
+    /// Whether the team is hidden on the public scoreboard
+    /// </summary>
+    [JsonPropertyName("isHidden")]
+    public bool IsHidden { get; set; }
 
     /// <summary>
     /// Participant ID

@@ -25,7 +25,7 @@ import { GameProgress } from '@Components/GameProgress'
 import { Markdown } from '@Components/MarkdownRenderer'
 import { WithNavBar } from '@Components/WithNavbar'
 import { useLanguage } from '@Utils/I18n'
-import { showErrorMsg } from '@Utils/Shared'
+import { showErrorMsg, isParticipationActive } from '@Utils/Shared'
 import { useIsMobile } from '@Utils/ThemeOverride'
 import { getGameStatus, useGame } from '@Hooks/useGame'
 import { usePageTitle } from '@Hooks/usePageTitle'
@@ -47,6 +47,7 @@ const GetAlert = (status: ParticipationStatus, team: string) => {
       },
     ],
     [ParticipationStatus.Accepted, null],
+    [ParticipationStatus.Hidden, null],
     [
       ParticipationStatus.Rejected,
       {
@@ -118,6 +119,7 @@ const GameDetail: FC = () => {
   const GameActionMap = new Map([
     [ParticipationStatus.Pending, t('game.participation.actions.pending')],
     [ParticipationStatus.Accepted, t('game.participation.actions.accepted')],
+    [ParticipationStatus.Hidden, t('game.participation.actions.hidden')],
     [ParticipationStatus.Rejected, t('game.participation.actions.rejected')],
     [ParticipationStatus.Suspended, t('game.participation.actions.suspended')],
     [ParticipationStatus.Unsubmitted, t('game.participation.actions.unsubmitted')],
@@ -210,7 +212,7 @@ const GameDetail: FC = () => {
           {t('game.button.leave')}
         </Button>
       )}
-      {status === ParticipationStatus.Accepted && started && !isMobile && (!finished || game?.practiceMode) && (
+      {isParticipationActive(status) && started && !isMobile && (!finished || game?.practiceMode) && (
         <Button component={Link} to={`/games/${numId}/challenges`}>
           {t('game.button.challenges')}
         </Button>
@@ -285,7 +287,7 @@ const GameDetail: FC = () => {
               </Trans>
             </Alert>
           )}
-          {status === ParticipationStatus.Accepted && !started && (
+          {isParticipationActive(status) && !started && (
             <Alert color="teal" icon={<Icon path={mdiCheck} />} title={t('game.participation.alert.not_started.title')}>
               {t('game.participation.alert.not_started.content', {
                 team: game?.teamName ?? '',

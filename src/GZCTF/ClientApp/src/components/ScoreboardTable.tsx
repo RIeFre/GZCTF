@@ -271,19 +271,21 @@ export const ScoreboardTable: FC<ScoreboardProps> = ({ division, setDivision }) 
 
   const { scoreboard } = useGameScoreboard(numId)
 
+  const visibleItems = useMemo(() => scoreboard?.items?.filter((item) => !item.isHidden) ?? [], [scoreboard])
+
   const filteredList = useMemo(() => {
-    if (!scoreboard?.items) return []
+    if (!visibleItems) return []
 
     if (!!debouncedKeyword && debouncedKeyword.length > 0) {
-      return scoreboard.items.filter((s) => s.name?.toLowerCase().includes(debouncedKeyword.toLowerCase()))
+      return visibleItems.filter((s) => s.name?.toLowerCase().includes(debouncedKeyword.toLowerCase()))
     }
 
     if (division !== 'all') {
-      return scoreboard.items.filter((s) => s.division === division)
+      return visibleItems.filter((s) => s.division === division)
     }
 
-    return scoreboard.items
-  }, [scoreboard, debouncedKeyword, division])
+    return visibleItems
+  }, [visibleItems, debouncedKeyword, division])
 
   useEffect(() => {
     setPage(1)

@@ -185,6 +185,7 @@
   "participation": {
     "actions": {
       "accepted": "审核通过",
+      "hidden": "隐藏中",
       "pending": "等待审核",
       "rejected": "重新报名",
       "suspended": "禁赛中",
@@ -215,6 +216,7 @@
     },
     "status": {
       "accepted": "审核通过",
+      "hidden": "隐藏中",
       "pending": "待审核",
       "rejected": "审核未通过",
       "suspended": "禁赛中"

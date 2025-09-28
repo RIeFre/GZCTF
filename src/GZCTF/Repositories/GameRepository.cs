@@ -535,7 +535,9 @@ public class GameRepository(
             items = await Context.Participations
                 .AsNoTracking()
                 .IgnoreAutoIncludes()
-                .Where(p => p.GameId == game.Id && p.Status == ParticipationStatus.Accepted)
+                .Where(p => p.GameId == game.Id &&
+                            (p.Status == ParticipationStatus.Accepted ||
+                             p.Status == ParticipationStatus.Hidden))
                 .Include(p => p.Team)
                 .Select(p => new ScoreboardItem
                 {
@@ -546,6 +548,7 @@ public class GameRepository(
                     Division = p.Division,
                     ParticipantId = p.Id,
                     TeamInfo = p.Team,
+                    IsHidden = p.Status == ParticipationStatus.Hidden,
                     // pending fields: SolvedChallenges
                     Rank = 0,
                     LastSubmissionTime = DateTimeOffset.MinValue
@@ -634,10 +637,31 @@ public class GameRepository(
 
             var challenge = challenges[item.Id];
             var challengeInfo = challenge.Info;
-            var (baseScore, isLateSolve) = challenge.AwardScore(item.SubmitTimeUtc);
+            var isHiddenTeam = scoreboardItem.IsHidden;
+            int baseScore;
+            bool isLateSolve;
+
+            if (isHiddenTeam)
+            {
+                isLateSolve = item.SubmitTimeUtc > challenge.ExpectedSolveTimeUtc;
+                if (isLateSolve)
+                    baseScore = challenge.LateSolveScore;
+                else
+                {
+                    var solveNumber = challenge.AwardedSolves + 1;
+                    baseScore = GameChallenge.CalculateScore(challenge.OriginalScore, challenge.MinScoreRate,
+                        challenge.Difficulty, solveNumber, item.SubmitTimeUtc, challenge.ExpectedSolveTimeUtc);
+                }
+            }
+            else
+            {
+                var result = challenge.AwardScore(item.SubmitTimeUtc);
+                baseScore = result.score;
+                isLateSolve = result.isLate;
+            }
 
             // 4.1. generate bloods if eligible and before the expected completion time
-            if (!isLateSolve && challengeInfo is { DisableBloodBonus: false, Bloods.Count: < 3 })
+            if (!isHiddenTeam && !isLateSolve && challengeInfo is { DisableBloodBonus: false, Bloods.Count: < 3 })
             {
                 item.Type = challengeInfo.Bloods.Count switch
                 {
@@ -687,17 +711,23 @@ public class GameRepository(
             scoreboardItem.LastSubmissionTime = item.SubmitTimeUtc;
         }
 
-        // 5. sort scoreboard items by score and last submission time
-        items = items.Values
+        // 5. sort scoreboard items by score and last submission time (visible teams only)
+        var orderedVisibleItems = items.Values
+            .Where(i => !i.IsHidden)
             .OrderByDescending(i => i.Score)
             .ThenBy(i => i.LastSubmissionTime)
-            .ToDictionary(i => i.Id); // team id -> scoreboard item
+            .ToList();
+        var hiddenItemsOrdered = items.Values
+            .Where(i => i.IsHidden)
+            .OrderByDescending(i => i.Score)
+            .ThenBy(i => i.LastSubmissionTime)
+            .ToList();
 
         // 6. update rank and organization rank
         var ranks = new Dictionary<string, int>();
         var currentRank = 1;
         Dictionary<string, HashSet<int>> orgTeams = new() { ["all"] = [] };
-        foreach (var item in items.Values)
+        foreach (var item in orderedVisibleItems)
         {
             item.Rank = currentRank++;
 
@@ -722,6 +752,16 @@ public class GameRepository(
             }
         }
 
+        // reset hidden items' ranks
+        foreach (var hiddenItem in hiddenItemsOrdered)
+        {
+            hiddenItem.Rank = 0;
+            hiddenItem.DivisionRank = null;
+        }
+
+        var finalOrder = orderedVisibleItems.Concat(hiddenItemsOrdered).ToList();
+        items = finalOrder.ToDictionary(i => i.Id); // team id -> scoreboard item (includes hidden)
+
         // 7. generate top timelines by solved challenges
         var timelines = orgTeams.ToDictionary(
             i => i.Key,
@@ -744,6 +784,20 @@ public class GameRepository(
                 }
             )
         );
+
+        // Update challenge info with recalculated solved count and dynamic score excluding hidden teams
+        foreach (var challenge in challenges.Values)
+        {
+            var solvedCount = orderedVisibleItems.Count(i => i.SolvedChallenges.Any(c => c.Id == challenge.Info.Id));
+            challenge.Info.SolvedCount = solvedCount;
+            challenge.Info.Score = GameChallenge.CalculateScore(
+                challenge.OriginalScore,
+                challenge.MinScoreRate,
+                challenge.Difficulty,
+                solvedCount + 1,
+                DateTimeOffset.UtcNow,
+                challenge.ExpectedSolveTimeUtc);
+        }
 
         // 8. construct the final scoreboard model
         var challengesDict = challenges
