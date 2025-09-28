@@ -215,6 +215,9 @@
   <data name="Admin_CaptainDeletionNotAllowed" xml:space="preserve">
     <value>You cannot delete captain</value>
   </data>
+  <data name="Admin_ChallengeStatisticsDownloadFailed" xml:space="preserve">
+    <value>Failed to download challenge statistics</value>
+  </data>
   <data name="Admin_ContainerInstanceDestroyFailed" xml:space="preserve">
     <value>Container destruction failed</value>
   </data>
@@ -617,6 +620,54 @@
   <data name="Header_TotalScore" xml:space="preserve">
     <value>Score</value>
   </data>
+  <data name="Header_ChallengeTitle" xml:space="preserve">
+    <value>Challenge</value>
+  </data>
+  <data name="Header_Category" xml:space="preserve">
+    <value>Category</value>
+  </data>
+  <data name="Header_Type" xml:space="preserve">
+    <value>Type</value>
+  </data>
+  <data name="Header_TotalTeams" xml:space="preserve">
+    <value>Eligible Teams</value>
+  </data>
+  <data name="Header_ActivatedTeams" xml:space="preserve">
+    <value>Teams Attempted</value>
+  </data>
+  <data name="Header_SolvedTeams" xml:space="preserve">
+    <value>Teams Solved</value>
+  </data>
+  <data name="Header_TotalSubmissions" xml:space="preserve">
+    <value>Total Submissions</value>
+  </data>
+  <data name="Header_CompletionRate" xml:space="preserve">
+    <value>Completion Rate</value>
+  </data>
+  <data name="Header_AttemptAverage" xml:space="preserve">
+    <value>Avg Attempts</value>
+  </data>
+  <data name="Header_AttemptMedian" xml:space="preserve">
+    <value>Median Attempts</value>
+  </data>
+  <data name="Header_AttemptMin" xml:space="preserve">
+    <value>Min Attempts</value>
+  </data>
+  <data name="Header_AttemptMax" xml:space="preserve">
+    <value>Max Attempts</value>
+  </data>
+  <data name="Header_SolveTimeAverage" xml:space="preserve">
+    <value>Avg Solve Time (min)</value>
+  </data>
+  <data name="Header_SolveTimeMedian" xml:space="preserve">
+    <value>Median Solve Time (min)</value>
+  </data>
+  <data name="Header_SolveTimeMin" xml:space="preserve">
+    <value>Min Solve Time (min)</value>
+  </data>
+  <data name="Header_SolveTimeMax" xml:space="preserve">
+    <value>Max Solve Time (min)</value>
+  </data>
   <data name="Header_User" xml:space="preserve">
     <value>User</value>
   </data>
@@ -856,6 +907,9 @@
   </data>
   <data name="RateLimit_TooManyRequests" xml:space="preserve">
     <value>Too many requests. Please try again in {0} seconds.</value>
+  </data>
+  <data name="ChallengeStats_Title" xml:space="preserve">
+    <value>Challenge Statistics</value>
   </data>
   <data name="Scoreboard_AllSubmissions" xml:space="preserve">
     <value>All Submissions</value>

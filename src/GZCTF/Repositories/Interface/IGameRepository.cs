@@ -1,4 +1,5 @@
-﻿using GZCTF.Models.Request.Game;
+﻿using GZCTF.Models.Request.Admin;
+using GZCTF.Models.Request.Game;
 
 namespace GZCTF.Repositories.Interface;
 
@@ -153,6 +154,19 @@ public interface IGameRepository : IRepository
     /// <param name="token"></param>
     /// <returns></returns>
     public Task<ScoreboardModel> GetScoreboardWithMembers(Game game, CancellationToken token = default);
+
+    #endregion
+
+    #region Statistics
+
+    /// <summary>
+    /// Get aggregated statistics for each challenge within a game
+    /// </summary>
+    /// <param name="game">Game</param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    public Task<IReadOnlyList<ChallengeStatisticModel>> GetChallengeStatistics(Game game,
+        CancellationToken token = default);
 
     #endregion
 }

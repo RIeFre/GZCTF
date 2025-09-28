@@ -45,6 +45,7 @@
       "copy_public_key": "复制公钥",
       "delete": "删除比赛",
       "export_scoreboard": "导出榜单",
+      "export_statistics": "导出统计",
       "new": "新建比赛"
     },
     "notices": {
@@ -262,6 +263,32 @@
           "not_joined": "未报名",
           "stats": "{{count}}/{{total}} 已报名",
           "update": "确定要设为 \"{{status}}\" 吗？"
+        }
+      },
+      "statistics": {
+        "empty": "暂无统计数据，队伍开始尝试题目后会自动生成。",
+        "charts": {
+          "completion": "完成率",
+          "attempts": "平均尝试次数",
+          "solve_time": "平均解题时间（分钟）",
+          "solve_time_median": "解题时间中位数（分钟）",
+          "solve_time_unit": "分钟"
+        },
+        "table": {
+          "title": "详细指标",
+          "summary": "{{title}} 共 {{team}} 支参赛队伍",
+          "challenge": "题目",
+          "category": "分类",
+          "type": "类型",
+          "teams": "解出/尝试/总数",
+          "completion": "完成率",
+          "attempt_avg": "平均尝试",
+          "attempt_median": "尝试中位数",
+          "solve_avg": "平均解题时间（分钟）",
+          "solve_median": "解题时间中位数（分钟）"
+        },
+        "labels": {
+          "untitled": "未命名题目"
         }
       },
       "stats": "已显示 <1>{{current}}</1>/<1>{{total}}</1> 比赛",
@@ -524,6 +551,7 @@
       "index": "比赛管理",
       "info": "信息编辑",
       "notices": "比赛公告",
+      "statistics": "统计分析",
       "review": "队伍审核",
       "writeups": "Writeups"
     },

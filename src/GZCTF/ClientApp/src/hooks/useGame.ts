@@ -50,6 +50,16 @@ export const useAdminGame = (numId: number) => {
   return { game, error, mutate }
 }
 
+export const useAdminChallengeStatistics = (numId: number) => {
+  const {
+    data: statistics,
+    mutate,
+    error,
+  } = api.admin.useAdminGameChallengeStatistics(numId, OnceSWRConfig, numId > 0)
+
+  return { statistics, error, mutate }
+}
+
 export const useGame = (numId: number) => {
   const { data: game, error, mutate } = api.game.useGameGame(numId, OnceSWRConfig)
 

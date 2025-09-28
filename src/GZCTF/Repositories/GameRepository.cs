@@ -1,9 +1,11 @@
 ﻿using System.Diagnostics;
 using GZCTF.Models.Data;
+using GZCTF.Models.Request.Admin;
 using GZCTF.Models.Request.Game;
 using GZCTF.Repositories.Interface;
 using GZCTF.Services.Cache;
 using GZCTF.Services.Config;
+using GZCTF.Utils;
 using Microsoft.EntityFrameworkCore;
 
 namespace GZCTF.Repositories;
@@ -38,6 +40,8 @@ public class GameRepository(
             return (score, isLate);
         }
     }
+
+    private sealed record ChallengeProjection(int Id, string Title, ChallengeCategory Category, ChallengeType Type);
 
     public override Task<int> CountAsync(CancellationToken token = default) => Context.Games.CountAsync(token);
 
@@ -201,6 +205,252 @@ public class GameRepository(
         }
 
         return scoreboard;
+    }
+
+    public async Task<IReadOnlyList<ChallengeStatisticModel>> GetChallengeStatistics(Game game,
+        CancellationToken token = default)
+    {
+        var participations = await Context.Participations.AsNoTracking()
+            .Where(p => p.GameId == game.Id && p.Status == ParticipationStatus.Accepted)
+            .Select(p => new { p.Id, p.TeamId })
+            .ToArrayAsync(token);
+
+        var totalTeamCount = participations.Length;
+        var acceptedParticipationIds = participations.Select(p => p.Id).ToHashSet();
+        var teamToParticipationId = participations.GroupBy(p => p.TeamId)
+            .ToDictionary(g => g.Key, g => g.First().Id);
+
+        var challenges = await Context.GameChallenges.AsNoTracking()
+            .Where(c => c.GameId == game.Id)
+            .OrderBy(c => c.Category)
+            .ThenBy(c => c.Title)
+            .Select(c => new ChallengeProjection(c.Id, c.Title, c.Category, c.Type))
+            .ToArrayAsync(token);
+
+        var dynamicChallengeIds = challenges
+            .Where(c => c.Type == ChallengeType.DynamicContainer)
+            .Select(c => c.Id)
+            .ToHashSet();
+
+        var submissions = await Context.Submissions.AsNoTracking()
+            .Where(s => s.GameId == game.Id && s.Status != AnswerResult.FlagSubmitted &&
+                        s.ParticipationId != 0)
+            .Select(s => new
+            {
+                s.ParticipationId,
+                s.ChallengeId,
+                s.Status,
+                s.SubmitTimeUtc
+            })
+            .OrderBy(s => s.ChallengeId)
+            .ThenBy(s => s.ParticipationId)
+            .ThenBy(s => s.SubmitTimeUtc)
+            .ToArrayAsync(token);
+
+        var containerEvents = await Context.GameEvents.AsNoTracking()
+            .Where(e => e.GameId == game.Id && e.Type == EventType.ContainerStart)
+            .ToArrayAsync(token);
+
+        var containerStarts = await Context.Containers.AsNoTracking()
+            .Where(c => c.GameInstance != null && c.GameInstance.Challenge.GameId == game.Id &&
+                        c.GameInstance.Challenge.Type == ChallengeType.DynamicContainer)
+            .Select(c => new
+            {
+                c.GameInstance!.ChallengeId,
+                c.GameInstance.ParticipationId,
+                c.StartedAt
+            })
+            .ToArrayAsync(token);
+
+        Dictionary<(int ChallengeId, int ParticipationId), DateTimeOffset> firstContainerStarts = new();
+
+        foreach (var evt in containerEvents)
+        {
+            if (evt.Values is null || evt.Values.Count == 0)
+                continue;
+
+            if (!int.TryParse(evt.Values[0], out var challengeId))
+                continue;
+
+            if (!teamToParticipationId.TryGetValue(evt.TeamId, out var participationId))
+                continue;
+
+            if (!acceptedParticipationIds.Contains(participationId))
+                continue;
+
+            var key = (challengeId, participationId);
+            if (!firstContainerStarts.TryGetValue(key, out var existing) || evt.PublishTimeUtc < existing)
+                firstContainerStarts[key] = evt.PublishTimeUtc;
+        }
+
+        var containerFallback = containerStarts
+            .Where(c => acceptedParticipationIds.Contains(c.ParticipationId))
+            .GroupBy(c => (c.ChallengeId, c.ParticipationId))
+            .ToDictionary(g => g.Key, g => g.Min(item => (DateTimeOffset?)item.StartedAt));
+
+        Dictionary<int, HashSet<int>> activatedTeams = new();
+        Dictionary<int, HashSet<int>> solvedTeams = new();
+        Dictionary<int, List<int>> attemptsToSolve = new();
+        Dictionary<int, List<double>> solveTimeMinutes = new();
+        Dictionary<int, int> submissionCountByChallenge = new();
+
+        foreach (var submissionGroup in submissions.GroupBy(s => (s.ChallengeId, s.ParticipationId)))
+        {
+            var (challengeId, participationId) = submissionGroup.Key;
+
+            if (!acceptedParticipationIds.Contains(participationId))
+                continue;
+
+            var ordered = submissionGroup.OrderBy(s => s.SubmitTimeUtc).ToList();
+
+            if (!submissionCountByChallenge.TryGetValue(challengeId, out var totalSubmissions))
+                submissionCountByChallenge[challengeId] = ordered.Count;
+            else
+                submissionCountByChallenge[challengeId] = totalSubmissions + ordered.Count;
+
+            if (!activatedTeams.TryGetValue(challengeId, out var activatedSet))
+            {
+                activatedSet = new HashSet<int>();
+                activatedTeams[challengeId] = activatedSet;
+            }
+
+            activatedSet.Add(participationId);
+
+            var firstAccepted = ordered.FirstOrDefault(s => s.Status == AnswerResult.Accepted);
+            if (firstAccepted is null)
+                continue;
+
+            if (!solvedTeams.TryGetValue(challengeId, out var solvedSet))
+            {
+                solvedSet = new HashSet<int>();
+                solvedTeams[challengeId] = solvedSet;
+            }
+
+            solvedSet.Add(participationId);
+
+            if (!attemptsToSolve.TryGetValue(challengeId, out var attemptList))
+            {
+                attemptList = new List<int>();
+                attemptsToSolve[challengeId] = attemptList;
+            }
+
+            var attemptCount = ordered.TakeWhile(s => s.SubmitTimeUtc <= firstAccepted.SubmitTimeUtc).Count();
+            attemptList.Add(attemptCount);
+
+            if (!dynamicChallengeIds.Contains(challengeId))
+                continue;
+
+            DateTimeOffset? startTime = null;
+            if (firstContainerStarts.TryGetValue((challengeId, participationId), out var firstStart))
+                startTime = firstStart;
+            else if (containerFallback.TryGetValue((challengeId, participationId), out var fallback))
+                startTime = fallback;
+
+            if (startTime is null)
+                continue;
+
+            var duration = (firstAccepted.SubmitTimeUtc - startTime.Value).TotalMinutes;
+            if (duration < 0)
+                continue;
+
+            if (!solveTimeMinutes.TryGetValue(challengeId, out var solvingList))
+            {
+                solvingList = new List<double>();
+                solveTimeMinutes[challengeId] = solvingList;
+            }
+
+            solvingList.Add(duration);
+        }
+
+        foreach (var ((challengeId, participationId), _) in firstContainerStarts)
+        {
+            if (!activatedTeams.TryGetValue(challengeId, out var activatedSet))
+            {
+                activatedSet = new HashSet<int>();
+                activatedTeams[challengeId] = activatedSet;
+            }
+
+            activatedSet.Add(participationId);
+        }
+
+        foreach (var ((challengeId, participationId), startedAt) in containerFallback)
+        {
+            if (startedAt is null)
+                continue;
+
+            if (!activatedTeams.TryGetValue(challengeId, out var activatedSet))
+            {
+                activatedSet = new HashSet<int>();
+                activatedTeams[challengeId] = activatedSet;
+            }
+
+            activatedSet.Add(participationId);
+        }
+
+        List<ChallengeStatisticModel> result = new(); 
+
+        foreach (var challenge in challenges)
+        {
+            activatedTeams.TryGetValue(challenge.Id, out var activatedSet);
+            solvedTeams.TryGetValue(challenge.Id, out var solvedSet);
+            attemptsToSolve.TryGetValue(challenge.Id, out var attemptList);
+            solveTimeMinutes.TryGetValue(challenge.Id, out var solveList);
+            submissionCountByChallenge.TryGetValue(challenge.Id, out var totalSubmissions);
+
+            var attemptsMetric = attemptList is null
+                ? new StatisticMetricModel()
+                : BuildMetric(attemptList.Select(a => (double)a));
+
+            var solveMetric = solveList is null
+                ? new StatisticMetricModel()
+                : BuildMetric(solveList);
+
+            var solvedCount = solvedSet?.Count ?? 0;
+            var activatedCount = activatedSet?.Count ?? 0;
+            var completionRate = totalTeamCount == 0
+                ? 0
+                : (double)solvedCount / totalTeamCount;
+
+            result.Add(new ChallengeStatisticModel
+            {
+                ChallengeId = challenge.Id,
+                Title = challenge.Title,
+                Category = challenge.Category,
+                Type = challenge.Type,
+                TotalTeamCount = totalTeamCount,
+                ActivatedTeamCount = activatedCount,
+                SolvedTeamCount = solvedCount,
+                TotalSubmissionCount = totalSubmissions,
+                CompletionRate = completionRate,
+                AttemptsToSolve = attemptsMetric,
+                SolveTimeMinutes = challenge.Type == ChallengeType.DynamicContainer ? solveMetric : new StatisticMetricModel()
+            });
+        }
+
+        return result;
+    }
+
+    static StatisticMetricModel BuildMetric(IEnumerable<double> source)
+    {
+        var ordered = source
+            .Where(value => !double.IsNaN(value) && !double.IsInfinity(value))
+            .OrderBy(value => value)
+            .ToArray();
+
+        if (ordered.Length == 0)
+            return new StatisticMetricModel();
+
+        var median = ordered.Length % 2 == 0
+            ? (ordered[ordered.Length / 2 - 1] + ordered[ordered.Length / 2]) / 2.0
+            : ordered[ordered.Length / 2];
+
+        return new StatisticMetricModel
+        {
+            Average = ordered.Average(),
+            Median = median,
+            Minimum = ordered[0],
+            Maximum = ordered[^1]
+        };
     }
 
     public async Task<TaskStatus> DeleteGame(Game game, CancellationToken token = default)

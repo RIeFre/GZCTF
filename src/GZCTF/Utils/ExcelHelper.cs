@@ -1,4 +1,5 @@
-﻿using GZCTF.Models.Request.Game;
+﻿using GZCTF.Models.Request.Admin;
+using GZCTF.Models.Request.Game;
 using Microsoft.Extensions.Localization;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
@@ -36,6 +37,26 @@ public class ExcelHelper(IStringLocalizer<Program> localizer)
         localizer[nameof(Resources.Program.Header_Email)]
     ];
 
+    readonly string[] _challengeStatisticsHeader =
+    [
+        localizer[nameof(Resources.Program.Header_ChallengeTitle)],
+        localizer[nameof(Resources.Program.Header_Category)],
+        localizer[nameof(Resources.Program.Header_Type)],
+        localizer[nameof(Resources.Program.Header_TotalTeams)],
+        localizer[nameof(Resources.Program.Header_ActivatedTeams)],
+        localizer[nameof(Resources.Program.Header_SolvedTeams)],
+        localizer[nameof(Resources.Program.Header_TotalSubmissions)],
+        localizer[nameof(Resources.Program.Header_CompletionRate)],
+        localizer[nameof(Resources.Program.Header_AttemptAverage)],
+        localizer[nameof(Resources.Program.Header_AttemptMedian)],
+        localizer[nameof(Resources.Program.Header_AttemptMin)],
+        localizer[nameof(Resources.Program.Header_AttemptMax)],
+        localizer[nameof(Resources.Program.Header_SolveTimeAverage)],
+        localizer[nameof(Resources.Program.Header_SolveTimeMedian)],
+        localizer[nameof(Resources.Program.Header_SolveTimeMin)],
+        localizer[nameof(Resources.Program.Header_SolveTimeMax)]
+    ];
+
     public MemoryStream GetScoreboardExcel(ScoreboardModel scoreboard, Game game)
     {
         if (scoreboard.Items.Values.FirstOrDefault()?.TeamInfo is null)
@@ -59,6 +80,19 @@ public class ExcelHelper(IStringLocalizer<Program> localizer)
         var headerStyle = GetHeaderStyle(workbook);
         WriteSubmissionHeader(subSheet, headerStyle);
         WriteSubmissionContent(subSheet, submissions);
+
+        var stream = new MemoryStream();
+        workbook.Write(stream, true);
+        return stream;
+    }
+
+    public MemoryStream GetChallengeStatisticsExcel(IEnumerable<ChallengeStatisticModel> statistics)
+    {
+        var workbook = new XSSFWorkbook();
+        var statSheet = workbook.CreateSheet(localizer[nameof(Resources.Program.ChallengeStats_Title)]);
+        var headerStyle = GetHeaderStyle(workbook);
+        WriteChallengeStatisticsHeader(statSheet, headerStyle);
+        WriteChallengeStatisticsContent(statSheet, statistics);
 
         var stream = new MemoryStream();
         workbook.Write(stream, true);
@@ -109,6 +143,62 @@ public class ExcelHelper(IStringLocalizer<Program> localizer)
             row.CreateCell(colIndex).SetCellValue(item.User?.Email ?? string.Empty);
 
             rowIndex++;
+        }
+    }
+
+    void WriteChallengeStatisticsHeader(ISheet sheet, ICellStyle style)
+    {
+        var row = sheet.CreateRow(0);
+        var colIndex = 0;
+
+        foreach (var col in _challengeStatisticsHeader)
+        {
+            var cell = row.CreateCell(colIndex++);
+            cell.SetCellValue(col);
+            cell.CellStyle = style;
+        }
+    }
+
+    static void WriteChallengeStatisticsContent(ISheet sheet, IEnumerable<ChallengeStatisticModel> statistics)
+    {
+        var rowIndex = 1;
+
+        foreach (var stat in statistics)
+        {
+            var row = sheet.CreateRow(rowIndex++);
+            var colIndex = 0;
+
+            row.CreateCell(colIndex++).SetCellValue(stat.Title);
+            row.CreateCell(colIndex++).SetCellValue(stat.Category.ToString());
+            row.CreateCell(colIndex++).SetCellValue(stat.Type.ToString());
+            row.CreateCell(colIndex++).SetCellValue(stat.TotalTeamCount);
+            row.CreateCell(colIndex++).SetCellValue(stat.ActivatedTeamCount);
+            row.CreateCell(colIndex++).SetCellValue(stat.SolvedTeamCount);
+            row.CreateCell(colIndex++).SetCellValue(stat.TotalSubmissionCount);
+            row.CreateCell(colIndex++).SetCellValue(Math.Round(stat.CompletionRate, 4));
+
+            SetOptionalNumericCell(row.CreateCell(colIndex++), stat.AttemptsToSolve.Average);
+            SetOptionalNumericCell(row.CreateCell(colIndex++), stat.AttemptsToSolve.Median);
+            SetOptionalNumericCell(row.CreateCell(colIndex++), stat.AttemptsToSolve.Minimum);
+            SetOptionalNumericCell(row.CreateCell(colIndex++), stat.AttemptsToSolve.Maximum);
+
+            SetOptionalNumericCell(row.CreateCell(colIndex++), stat.SolveTimeMinutes.Average);
+            SetOptionalNumericCell(row.CreateCell(colIndex++), stat.SolveTimeMinutes.Median);
+            SetOptionalNumericCell(row.CreateCell(colIndex++), stat.SolveTimeMinutes.Minimum);
+            SetOptionalNumericCell(row.CreateCell(colIndex++), stat.SolveTimeMinutes.Maximum);
+        }
+    }
+
+    static void SetOptionalNumericCell(ICell cell, double? value)
+    {
+        switch (value)
+        {
+            case null:
+                cell.SetCellValue(string.Empty);
+                break;
+            default:
+                cell.SetCellValue(Math.Round(value.Value, 2));
+                break;
         }
     }
 

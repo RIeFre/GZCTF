@@ -607,6 +607,59 @@ export interface AdminUserInfoModel {
   role?: Role | null;
 }
 
+/** Summary statistics for numeric series */
+export interface StatisticMetricModel {
+  /** Arithmetic mean */
+  average?: number | null;
+  /** Median value */
+  median?: number | null;
+  /** Minimum value */
+  minimum?: number | null;
+  /** Maximum value */
+  maximum?: number | null;
+}
+
+/** Challenge aggregate statistics */
+export interface ChallengeStatisticModel {
+  /**
+   * Challenge identifier
+   * @format int32
+   */
+  challengeId?: number;
+  /** Challenge title */
+  title?: string | null;
+  /** Challenge category */
+  category?: ChallengeCategory;
+  /** Challenge type */
+  type?: ChallengeType;
+  /**
+   * Total number of eligible teams
+   * @format int32
+   */
+  totalTeamCount?: number;
+  /**
+   * Teams that interacted with the challenge
+   * @format int32
+   */
+  activatedTeamCount?: number;
+  /**
+   * Teams that solved the challenge
+   * @format int32
+   */
+  solvedTeamCount?: number;
+  /**
+   * All submissions counted for the challenge
+   * @format int32
+   */
+  totalSubmissionCount?: number;
+  /** Completion rate (0-1) */
+  completionRate?: number;
+  /** Submission attempts summary */
+  attemptsToSolve?: StatisticMetricModel | null;
+  /** Solve time summary in minutes */
+  solveTimeMinutes?: StatisticMetricModel | null;
+}
+
 /** Log information (Admin) */
 export interface LogMessageModel {
   /**
@@ -2512,6 +2565,73 @@ export class Api<
     adminDownloadAllWriteups: (id: number, params: RequestParams = {}) =>
       this.request<void, RequestResponse>({
         path: `/api/admin/writeups/${id}/all`,
+        method: "GET",
+        ...params,
+      }),
+
+    /**
+     * @description Provides aggregated statistics for all challenges within the game, requires Admin permission
+     *
+     * @tags Admin
+     * @name AdminGameChallengeStatistics
+     * @summary Get challenge statistics of a game
+     * @request GET:/api/admin/games/{id}/challengestatistics
+     */
+    adminGameChallengeStatistics: (id: number, params: RequestParams = {}) =>
+      this.request<ChallengeStatisticModel[], RequestResponse>({
+        path: `/api/admin/games/${id}/challengestatistics`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+    /**
+     * @description Provides aggregated statistics for all challenges within the game, requires Admin permission
+     *
+     * @tags Admin
+     * @name AdminGameChallengeStatistics
+     * @summary Get challenge statistics of a game
+     * @request GET:/api/admin/games/{id}/challengestatistics
+     */
+    useAdminGameChallengeStatistics: (
+      id: number,
+      options?: SWRConfiguration,
+      doFetch: boolean = true,
+    ) =>
+      useSWR<ChallengeStatisticModel[], RequestResponse>(
+        doFetch ? `/api/admin/games/${id}/challengestatistics` : null,
+        options,
+      ),
+
+    /**
+     * @description Provides aggregated statistics for all challenges within the game, requires Admin permission
+     *
+     * @tags Admin
+     * @name AdminGameChallengeStatistics
+     * @summary Get challenge statistics of a game
+     * @request GET:/api/admin/games/{id}/challengestatistics
+     */
+    mutateAdminGameChallengeStatistics: (
+      id: number,
+      data?: ChallengeStatisticModel[] | Promise<ChallengeStatisticModel[]>,
+      options?: MutatorOptions,
+    ) =>
+      mutate<ChallengeStatisticModel[]>(
+        `/api/admin/games/${id}/challengestatistics`,
+        data,
+        options,
+      ),
+
+    /**
+     * @description Exports challenge statistics as an Excel file, requires Admin permission
+     *
+     * @tags Admin
+     * @name AdminGameChallengeStatisticsSheet
+     * @summary Download challenge statistics sheet
+     * @request GET:/api/admin/games/{id}/challengestatisticssheet
+     */
+    adminGameChallengeStatisticsSheet: (id: number, params: RequestParams = {}) =>
+      this.request<void, RequestResponse>({
+        path: `/api/admin/games/${id}/challengestatisticssheet`,
         method: "GET",
         ...params,
       }),

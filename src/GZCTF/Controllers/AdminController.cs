@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.IO;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Mime;
 using FluentStorage.Blobs;
@@ -11,6 +12,7 @@ using GZCTF.Models.Request.Info;
 using GZCTF.Repositories.Interface;
 using GZCTF.Services.Cache;
 using GZCTF.Services.Config;
+using GZCTF.Utils;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -574,6 +576,73 @@ public class AdminController(
         await participationRepository.UpdateParticipation(participation, model, token);
 
         return Ok();
+    }
+
+    /// <summary>
+    /// Get aggregated challenge statistics for a game
+    /// </summary>
+    /// <remarks>
+    /// Use this API to fetch completion and attempt statistics for all challenges, requires Admin permission
+    /// </remarks>
+    /// <response code="200">Challenge statistics</response>
+    /// <response code="404">Game not found</response>
+    [HttpGet("Games/{id:int}/ChallengeStatistics")]
+    [ProducesResponseType(typeof(ChallengeStatisticModel[]), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(RequestResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ChallengeStatistics([FromRoute] int id, CancellationToken token = default)
+    {
+        var game = await gameRepository.GetGameById(id, token);
+
+        if (game is null)
+            return NotFound(new RequestResponse(localizer[nameof(Resources.Program.Game_NotFound)],
+                StatusCodes.Status404NotFound));
+
+        var statistics = await gameRepository.GetChallengeStatistics(game, token);
+
+        return Ok(statistics);
+    }
+
+    /// <summary>
+    /// Download challenge statistics of a game
+    /// </summary>
+    /// <remarks>
+    /// Use this API to export challenge statistics as an Excel file, requires Admin permission
+    /// </remarks>
+    /// <response code="200">Downloaded successfully</response>
+    /// <response code="400">Download failed</response>
+    /// <response code="404">Game not found</response>
+    [HttpGet("Games/{id:int}/ChallengeStatisticsSheet")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(RequestResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(RequestResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DownloadChallengeStatisticsSheet([FromRoute] int id,
+        [FromServices] ExcelHelper excelHelper,
+        CancellationToken token = default)
+    {
+        var game = await gameRepository.GetGameById(id, token);
+
+        if (game is null)
+            return NotFound(new RequestResponse(localizer[nameof(Resources.Program.Game_NotFound)],
+                StatusCodes.Status404NotFound));
+
+        try
+        {
+            var statistics = await gameRepository.GetChallengeStatistics(game, token);
+            var stream = excelHelper.GetChallengeStatisticsExcel(statistics);
+            stream.Seek(0, SeekOrigin.Begin);
+
+            return File(stream,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                $"{game.Title}-Challenge-Statistics-{DateTimeOffset.Now:yyyyMMdd-HH.mm.ssZ}.xlsx");
+        }
+        catch (Exception ex)
+        {
+            logger.SystemLog(StaticLocalizer[nameof(Resources.Program.Admin_ChallengeStatisticsDownloadFailed)],
+                TaskStatus.Failed, LogLevel.Error);
+            logger.LogErrorMessage(ex, ex.Message);
+            return BadRequest(new RequestResponse(localizer[
+                nameof(Resources.Program.Admin_ChallengeStatisticsDownloadFailed)], StatusCodes.Status400BadRequest));
+        }
     }
 
     /// <summary>

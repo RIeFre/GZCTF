@@ -45,6 +45,7 @@
       "copy_public_key": "Copy Public Key",
       "delete": "Delete",
       "export_scoreboard": "Export Scoreboard",
+      "export_statistics": "Export Statistics",
       "new": "New Game"
     },
     "notices": {
@@ -262,6 +263,32 @@
           "not_joined": "Not Registered",
           "stats": "{{count}}/{{total}} joined",
           "update": "Set this team's status to: \"{{status}}\"?"
+        }
+      },
+      "statistics": {
+        "empty": "No statistics yet. Data will appear once teams start working on the challenges.",
+        "charts": {
+          "completion": "Completion Rate",
+          "attempts": "Average Attempts",
+          "solve_time": "Average Solve Time (min)",
+          "solve_time_median": "Median Solve Time (min)",
+          "solve_time_unit": "Minutes"
+        },
+        "table": {
+          "title": "Detailed Breakdown",
+          "summary": "{{team}} eligible teams in {{title}}",
+          "challenge": "Challenge",
+          "category": "Category",
+          "type": "Type",
+          "teams": "Solved / Attempted / Total",
+          "completion": "Completion Rate",
+          "attempt_avg": "Avg Attempts",
+          "attempt_median": "Median Attempts",
+          "solve_avg": "Avg Solve Time (min)",
+          "solve_median": "Median Solve Time (min)"
+        },
+        "labels": {
+          "untitled": "Untitled"
         }
       },
       "stats": "<1>{{current}}</1> out of <1>{{total}}</1> games displayed",
@@ -524,6 +551,7 @@
       "index": "Games",
       "info": "Information",
       "notices": "Notices",
+      "statistics": "Statistics",
       "review": "Teams",
       "writeups": "Writeups"
     },

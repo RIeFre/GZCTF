@@ -215,6 +215,9 @@
   <data name="Admin_CaptainDeletionNotAllowed" xml:space="preserve">
     <value>不可以删除队长</value>
   </data>
+  <data name="Admin_ChallengeStatisticsDownloadFailed" xml:space="preserve">
+    <value>导出题目统计失败</value>
+  </data>
   <data name="Admin_ContainerInstanceDestroyFailed" xml:space="preserve">
     <value>容器实例销毁失败</value>
   </data>
@@ -617,6 +620,54 @@
   <data name="Header_TotalScore" xml:space="preserve">
     <value>总分</value>
   </data>
+  <data name="Header_ChallengeTitle" xml:space="preserve">
+    <value>题目</value>
+  </data>
+  <data name="Header_Category" xml:space="preserve">
+    <value>分类</value>
+  </data>
+  <data name="Header_Type" xml:space="preserve">
+    <value>类型</value>
+  </data>
+  <data name="Header_TotalTeams" xml:space="preserve">
+    <value>参赛队伍数</value>
+  </data>
+  <data name="Header_ActivatedTeams" xml:space="preserve">
+    <value>参与队伍数</value>
+  </data>
+  <data name="Header_SolvedTeams" xml:space="preserve">
+    <value>解出队伍数</value>
+  </data>
+  <data name="Header_TotalSubmissions" xml:space="preserve">
+    <value>提交总数</value>
+  </data>
+  <data name="Header_CompletionRate" xml:space="preserve">
+    <value>完成率</value>
+  </data>
+  <data name="Header_AttemptAverage" xml:space="preserve">
+    <value>平均尝试次数</value>
+  </data>
+  <data name="Header_AttemptMedian" xml:space="preserve">
+    <value>尝试次数中位数</value>
+  </data>
+  <data name="Header_AttemptMin" xml:space="preserve">
+    <value>最少尝试次数</value>
+  </data>
+  <data name="Header_AttemptMax" xml:space="preserve">
+    <value>最多尝试次数</value>
+  </data>
+  <data name="Header_SolveTimeAverage" xml:space="preserve">
+    <value>平均解题时间(分钟)</value>
+  </data>
+  <data name="Header_SolveTimeMedian" xml:space="preserve">
+    <value>解题时间中位数(分钟)</value>
+  </data>
+  <data name="Header_SolveTimeMin" xml:space="preserve">
+    <value>最短解题时间(分钟)</value>
+  </data>
+  <data name="Header_SolveTimeMax" xml:space="preserve">
+    <value>最长解题时间(分钟)</value>
+  </data>
   <data name="Header_User" xml:space="preserve">
     <value>用户</value>
   </data>
@@ -856,6 +907,9 @@
   </data>
   <data name="RateLimit_TooManyRequests" xml:space="preserve">
     <value>请求次数过多，请 {0} 秒后再试。</value>
+  </data>
+  <data name="ChallengeStats_Title" xml:space="preserve">
+    <value>题目统计</value>
   </data>
   <data name="Scoreboard_AllSubmissions" xml:space="preserve">
     <value>全部提交</value>

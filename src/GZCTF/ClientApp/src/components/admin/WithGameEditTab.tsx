@@ -2,6 +2,7 @@ import { Button, Group, GroupProps, LoadingOverlay, Stack, Tabs } from '@mantine
 import {
   mdiAccountGroupOutline,
   mdiBullhornOutline,
+  mdiChartBoxMultipleOutline,
   mdiFileDocumentCheckOutline,
   mdiFlagOutline,
   mdiKeyboardBackspace,
@@ -40,6 +41,7 @@ export const WithGameEditTab: FC<GameEditTabProps> = ({
     { icon: mdiTextBoxOutline, title: t('admin.tab.games.info'), path: 'info' },
     { icon: mdiBullhornOutline, title: t('admin.tab.games.notices'), path: 'notices' },
     { icon: mdiFlagOutline, title: t('admin.tab.games.challenges'), path: 'challenges' },
+    { icon: mdiChartBoxMultipleOutline, title: t('admin.tab.games.statistics'), path: 'statistics' },
     { icon: mdiAccountGroupOutline, title: t('admin.tab.games.review'), path: 'review' },
     { icon: mdiFileDocumentCheckOutline, title: t('admin.tab.games.writeups'), path: 'writeups' },
   ]
