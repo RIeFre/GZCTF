@@ -31,9 +31,20 @@
 }
 
 .teamCell {
-  max-width: 0;
-  width: auto;
-  overflow: hidden;
+  text-align: center;
+}
+
+.teamScroll {
+  justify-content: center !important;
+
+  :global(.textWrapper) {
+    justify-content: center;
+    text-align: center;
+  }
+
+  :global(.text) {
+    text-align: center;
+  }
 }
 
 .legend {

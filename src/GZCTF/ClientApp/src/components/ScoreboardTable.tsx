@@ -33,7 +33,6 @@ import {
   useChallengeCategoryLabelMap,
   SubmissionTypeIconMap,
   useBonusLabels,
-  PartialIconProps,
 } from '@Utils/Shared'
 import { useGameScoreboard } from '@Hooks/useGame'
 import { ChallengeInfo, ChallengeCategory, ScoreboardItem, SubmissionType } from '@Api'
@@ -41,7 +40,7 @@ import misc from '@Styles/Misc.module.css'
 import classes from '@Styles/ScoreboardTable.module.css'
 import tooltipClasses from '@Styles/Tooltip.module.css'
 
-const Widths = [60, 60, 175, 60, 70, 60]
+const Widths = [60, 60, 150, 60, 70, 60]
 const Lefts = Widths.reduce(
   (acc, cur) => {
     acc.push(acc[acc.length - 1] + cur)
@@ -113,7 +112,16 @@ const TableHeader = React.memo((table: Record<string, ChallengeInfo[]>) => {
           t('game.label.score_table.solved_count'),
           t('game.label.score_table.score_total'),
         ].map((header, idx) => (
-          <Table.Th key={idx} className={cx(classes.left, classes.header)} style={{ left: Lefts[idx] }}>
+          <Table.Th
+            key={idx}
+            className={cx(classes.left, classes.header)}
+            style={{
+              left: Lefts[idx],
+              width: Widths[idx],
+              minWidth: Widths[idx],
+              maxWidth: Widths[idx],
+            }}
+          >
             {header}
           </Table.Th>
         ))}
@@ -134,9 +142,9 @@ const TableRow: FC<{
   allRank: boolean
   tableRank: number
   onOpenDetail: () => void
-  iconMap: Map<SubmissionType, PartialIconProps | undefined>
+  colorMap: Map<SubmissionType, string | undefined>
   challenges?: Record<string, ChallengeInfo[]>
-}> = React.memo(({ item, challenges, onOpenDetail, iconMap, tableRank, allRank }) => {
+}> = React.memo(({ item, challenges, onOpenDetail, colorMap, tableRank, allRank }) => {
   const challengeCategoryLabelMap = useChallengeCategoryLabelMap()
   const solved = item.solvedChallenges
   const theme = useMantineTheme()
@@ -148,49 +156,70 @@ const TableRow: FC<{
 
   return (
     <Table.Tr>
-      <Table.Td className={cx(classes.mono, classes.left)} style={{ left: Lefts[0] }}>
+      <Table.Td
+        className={cx(classes.mono, classes.left)}
+        style={{ left: Lefts[0], width: Widths[0], minWidth: Widths[0], maxWidth: Widths[0] }}
+      >
         {item.rank}
       </Table.Td>
-      <Table.Td className={cx(classes.mono, classes.left)} style={{ left: Lefts[1] }}>
+      <Table.Td
+        className={cx(classes.mono, classes.left)}
+        style={{ left: Lefts[1], width: Widths[1], minWidth: Widths[1], maxWidth: Widths[1] }}
+      >
         {allRank ? item.rank : (item.divisionRank ?? tableRank)}
       </Table.Td>
-      <Table.Td className={classes.left} style={{ left: Lefts[2] }}>
-        <Group
-          justify="left"
-          gap={5}
-          wrap="nowrap"
-          onClick={onOpenDetail}
-          maw={Widths[2] - 10}
-          className={classes.pointer}
-        >
-          <Avatar alt="avatar" src={item.avatar} radius="xl" size={30} color={theme.primaryColor}>
-            {item.name?.slice(0, 1) ?? 'T'}
-          </Avatar>
-          <Stack gap={0} h="2.5rem" justify="center" w={Widths[2] - 45}>
-            <ScrollingText size="sm" text={item.name || ''} onClick={onOpenDetail} />
-            {!!item.division && (
-              <Text size="xs" c="dimmed" ta="start" truncate className={classes.text}>
-                {item.division}
-              </Text>
-            )}
-          </Stack>
-        </Group>
+      <Table.Td
+        className={cx(classes.left, classes.teamCell)}
+        style={{ left: Lefts[2], width: Widths[2], minWidth: Widths[2], maxWidth: Widths[2] }}
+      >
+        <Stack align="center" gap={4} maw={Widths[2] - 10} onClick={onOpenDetail} className={classes.pointer}>
+          <Group justify="center" align="center" gap={8} wrap="nowrap">
+            <Avatar alt="avatar" src={item.avatar} radius="xl" size={32} color={theme.primaryColor}>
+              {item.name?.slice(0, 1) ?? 'T'}
+            </Avatar>
+            <ScrollingText
+              size="sm"
+              text={item.name || ''}
+              onClick={onOpenDetail}
+              className={classes.teamScroll}
+            />
+          </Group>
+          {!!item.division && (
+            <Text size="xs" c="dimmed" ta="center" truncate className={classes.text}>
+              {item.division}
+            </Text>
+          )}
+        </Stack>
       </Table.Td>
-      <Table.Td className={cx(classes.mono, classes.left)} style={{ left: Lefts[3] }}>
+      <Table.Td
+        className={cx(classes.mono, classes.left)}
+        style={{ left: Lefts[3], width: Widths[3], minWidth: Widths[3], maxWidth: Widths[3] }}
+      >
         {solved?.length}
       </Table.Td>
-      <Table.Td className={cx(classes.mono, classes.left)} style={{ left: Lefts[4] }}>
+      <Table.Td
+        className={cx(classes.mono, classes.left)}
+        style={{ left: Lefts[4], width: Widths[4], minWidth: Widths[4], maxWidth: Widths[4] }}
+      >
         {totalScore}
       </Table.Td>
       {challenges &&
         Object.keys(challenges).map((key) =>
           challenges[key].map((item) => {
             const chal = solved?.find((c) => c.id === item.id)
-            const icon = iconMap.get(chal?.type ?? SubmissionType.Unaccepted)
-
-            if (!icon) return <Table.Td key={item.id} className={classes.mono} />
-
+            const type = chal?.type ?? SubmissionType.Unaccepted
+            const color = chal ? colorMap.get(type) ?? theme.colors.gray[6] : theme.colors.gray[6]
+            const displayScore = chal?.score ?? 0
             const cate = challengeCategoryLabelMap.get(item.category as ChallengeCategory)!
+
+            if (!chal)
+              return (
+                <Table.Td key={item.id} className={classes.mono}>
+                  <Text c="dimmed" ta="center">
+                    0
+                  </Text>
+                </Table.Td>
+              )
 
             return (
               <Table.Td key={item.id} className={classes.mono}>
@@ -203,17 +232,17 @@ const TableRow: FC<{
                         {item.title}
                       </Text>
                       <Text c={cate.color} fz="xs" className={cx(classes.text, classes.mono)}>
-                        + {chal?.score} pts
+                        + {chal.score} pts
                       </Text>
                       <Text c="dimmed" fz="xs" className={cx(classes.text, classes.mono)}>
-                        # {dayjs(chal?.time).locale(locale).format('L LTS')}
+                        # {dayjs(chal.time).locale(locale).format('L LTS')}
                       </Text>
                     </Stack>
                   }
                 >
-                  <Center>
-                    <Icon {...icon} />
-                  </Center>
+                  <Text c={color} fw={600} ta="center">
+                    {displayScore}
+                  </Text>
                 </Tooltip>
               </Table.Td>
             )
@@ -233,7 +262,7 @@ export interface ScoreboardProps {
 export const ScoreboardTable: FC<ScoreboardProps> = ({ division, setDivision }) => {
   const { id } = useParams()
   const numId = parseInt(id ?? '-1')
-  const { iconMap } = SubmissionTypeIconMap(1)
+  const { iconMap, colorMap } = SubmissionTypeIconMap(1)
   const [activePage, setPage] = useState(1)
   const [bloodBonus, setBloodBonus] = useState(BloodBonus.default)
 
@@ -336,7 +365,7 @@ export const ScoreboardTable: FC<ScoreboardProps> = ({ division, setDivision }) 
                         setItemDetailOpened(true)
                       }}
                       challenges={scoreboard.challenges}
-                      iconMap={iconMap}
+                      colorMap={colorMap}
                     />
                   ))}
               </Table.Tbody>
