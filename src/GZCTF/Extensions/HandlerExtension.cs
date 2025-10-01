@@ -134,7 +134,7 @@ public static class HandlerExtension
         return "en-us";
     }
 
-    static async Task<IResult> IndexHandler(
+    static async Task IndexHandler(
         CacheHelper cacheHelper,
         HttpContext context,
         IOptionsSnapshot<GlobalConfig> globalConfig,
@@ -161,6 +161,7 @@ public static class HandlerExtension
         context.Response.Headers.ContentSecurityPolicy = string.Format(CspTemplate, nonce);
         builder.Replace("%nonce%", nonce);
 
-        return Results.Text(builder.ToString(), MediaTypeNames.Text.Html);
+        context.Response.ContentType = MediaTypeNames.Text.Html;
+        await context.Response.WriteAsync(builder.ToString(), token);
     }
 }
