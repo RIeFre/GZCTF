@@ -3,7 +3,7 @@ import process from 'process'
 import { defineConfig, loadEnv } from 'vite'
 import banner from 'vite-plugin-banner'
 import { optimizeCssModules } from 'vite-plugin-optimize-css-modules'
-import Pages from 'vite-plugin-pages'
+import Pages, { syncIndexResolver } from 'vite-plugin-pages'
 import webfontDownload from 'vite-plugin-webfont-dl'
 import tsconfigPaths from 'vite-tsconfig-paths'
 import { fetchContributors } from './plugins/vite-fetch-contributors'
@@ -67,7 +67,17 @@ export default defineConfig(({ mode }) => {
           async: false,
         }
       ),
-      Pages({ dirs: [{ dir: './src/pages', baseRoute: '', filePattern: '**/*.tsx' }] }),
+      Pages({
+        dirs: [{ dir: './src/pages', baseRoute: '', filePattern: '**/*.tsx' }],
+        importMode(filepath, options) {
+          const normalized = filepath.replace(/\\/g, '/')
+          // Force eager import to bypass sporadic React.lazy failures on the admin challenge tab.
+          if (normalized.endsWith('/src/pages/admin/games/[id]/challenges/Index.tsx')) {
+            return 'sync'
+          }
+          return syncIndexResolver(filepath, options)
+        },
+      }),
       i18nVirtualManifest(),
       fetchContributors(),
       optimizeCssModules(),
